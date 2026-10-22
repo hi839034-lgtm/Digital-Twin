@@ -10,7 +10,7 @@
 | `server/main.py` | FastAPI 서버. `/api/scenario/{S1,S2,S3}` · `/api/codes` 제공, `web/`을 정적 서빙 (`/ws` 는 센서 실시간용 예비) |
 | `server/sources.py` | 데이터 공급원. `ScenarioSource` / `SensorSource`(센서, 미구현) |
 | `server/data/codes.json` | 계층 · 공정 · 데이터 사전 D00~D30 (원본에서 `tools/extract_codes.py` 로 추출) |
-| `server/sim/` | 원본 이식: `geom`(시편 형상·결함) · `scen`(시나리오 생성) · `flows`(계층 간 데이터 흐름) · `kin`(6축 운동학) · `plan`(셀 로봇 경로 계획) |
+| `server/sim/` | 원본 이식: `geom`(시편 형상·결함) · `scen`(시나리오 생성) · `flows`(계층 간 데이터 흐름) · `kin`(6축 운동학) · `plan`(셀 로봇 경로 계획) · `render`(가상 3D 편차 맵 · 2D 영상, numpy/OpenCV) |
 | `web/` | 화면 (`index.html`, `style.css`, `js/` 탭별 모듈) |
 | `export/` | 단일 HTML 내보내기 결과물 (예정) |
 | `licenses/` | 사용 라이브러리 라이선스 (three.js, Pretendard) |

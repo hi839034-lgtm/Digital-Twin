@@ -7,6 +7,7 @@ import tabLayer from "./tab_layer.js";
 import tabSwim from "./tab_swim.js";
 import tabData from "./tab_data.js";
 import tabGuide from "./tab_guide.js";
+import { loadAssets } from "./plots.js";
 
 const $ = (s) => document.querySelector(s);
 const TABS = [tabMain, tabAmr, cellTab("3D", "③ 3D 스캔 셀"), cellTab("2D", "④ 2D 비전 셀"), cellTab("UT", "⑤ 초음파 셀"), tabLayer, tabSwim, tabData, tabGuide];
@@ -23,6 +24,7 @@ async function loadScenario(sid) {
   if (!cache[sid]) cache[sid] = await api("/api/scenario/" + sid);
   S.sid = sid;
   S.sc = cache[sid];
+  await loadAssets(S.sc); // 편차 격자 · 2D 영상 (서버가 만든다)
   S.t = 0;
   S.playing = false;
   drawTimeline();

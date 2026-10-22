@@ -85,7 +85,7 @@ def to_json(p, full=False):
         d["id"] = sg["res"]["id"]
         d["tool"] = sg["res"]["tool"]
         d["stats"] = seg_stats(sg, p["act"])
-        d["pts"] = [{"p": r["target"]["p"], "tip": r["tip"], "reach": r["reach"], "inner": r["inner"],
+        d["pts"] = [{"p": r["target"]["p"], "part": r["target"]["part"], "tip": r["tip"], "reach": r["reach"], "inner": r["inner"],
                      "clear": r["clear"]["d"]} for r in sg["res"]["res"]]
         segs.append(d)
     return {"K": p["K"], "segs": segs}

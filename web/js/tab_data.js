@@ -1,5 +1,6 @@
 // ⑦ 데이터 코드 · 저장 형식: 데이터 사전 D00–D30 · 세부 코드 · 저장 위치
 import { S, catOf, esc, fmtT, layerName, sent, sentAt } from "./state.js";
+import { hasPreview, preview, sampleRecord } from "./plots.js";
 
 const STORE = { E: "엣지", O: "객체 저장소", M: "메타 DB" };
 const storeText = (s) => s.replace(/[EOM]/g, (c) => STORE[c]).replace(/\+/g, " + ").replace(/→/g, " → ").replace(/,/g, ", ");
@@ -40,7 +41,10 @@ export default {
       <table style="margin-top:8px"><tr><th>형식</th><td>${esc(d.format)}</td></tr><tr><th>저장 위치</th><td>${esc(storeText(d.storage))}</td></tr>
       <tr><th>원천 계층</th><td>${esc(layerName(d.source_layer))}</td></tr><tr><th>종류</th><td class="cat-${catOf(d.code)}">${CATN[d.category]}</td></tr></table>
       <h3 style="margin-top:12px">세부 코드 ${d.sub.length}개</h3>
-      <table>${d.sub.map((s) => { const a = sentAt(s.code); return `<tr><td><span class="chip ${a != null && a <= t ? "on" : ""} cat-${d.category}">${s.code}</span></td><td>${esc(s.name)}<br><span class="muted">${esc(s.detail)}</span></td></tr>`; }).join("")}</table>`
+      <table>${d.sub.map((s) => { const a = sentAt(s.code); return `<tr><td><span class="chip ${a != null && a <= t ? "on" : ""} cat-${d.category}">${s.code}</span></td><td>${esc(s.name)}<br><span class="muted">${esc(s.detail)}</span></td></tr>`; }).join("")}</table>
+      <h3 style="margin-top:12px">${hasPreview(d) ? "데이터 미리보기" : "예시 레코드"}</h3>
+      ${hasPreview(d) ? '<canvas id="dprev" style="width:100%;height:220px;display:block;border-radius:6px"></canvas>' : `<pre style="margin:0;max-height:260px;overflow:auto;background:var(--bg);padding:8px;border-radius:6px;font-size:12px">${esc(JSON.stringify(sampleRecord(d), null, 1))}</pre>`}`
       : '<span class="muted">왼쪽 표에서 코드를 누르면 세부 정보가 나옵니다.</span>';
+    if (d && hasPreview(d)) preview(d, root.querySelector("#dprev"));
   },
 };

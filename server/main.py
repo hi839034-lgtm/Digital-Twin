@@ -39,8 +39,36 @@ def scenario(sid: str, full: bool = False):
         consts = {"CX": scen.CX, "LANE": scen.LANE, "BAY": scen.BAY, "DOCKZ": scen.DOCKZ, "INX": scen.INX,
                   "JX": scen.JX, "STORE": scen.STORE, "RETURN": scen.RETURN, "SPEED": scen.SPEED,
                   "HOME": kin.HOME, "rois": {k: len(v) for k, v in geom.ROIS.items()}, "spots": {k: v["label"] for k, v in geom.SPOTS.items()}}
-        _scenario_cache[(sid, full)] = {**sc, **flows.build(sc), "consts": consts}
+        _scenario_cache[(sid, full)] = {**sc, **flows.build(sc), "consts": consts,
+                                        "geom": {"rois": geom.ROIS, "spots": geom.SPOTS, "lof": geom.LOF}}
     return _scenario_cache[(sid, full)]
+
+
+_img_cache = {}
+
+
+@app.get("/api/devgrid/{part}")
+def devgrid(part: str):
+    """시편 윗면의 CAD 대비 편차 맵 격자 [mm] (3D 스캔 결과의 가상값). v 는 행(y) 우선 1차원 배열"""
+    from sim import render
+    if part not in ("A", "B", "C"):
+        raise HTTPException(404, f"unknown part {part}")
+    g = render.dev_grid(part, 2)
+    g["v"] = [round(x, 5) for x in g["v"]]
+    return g
+
+
+@app.get("/api/spot/{spot}")
+def spot_image(spot: str, sat: int = 0):
+    """2D 국부 촬영 지점의 가상 영상 (PNG). sat=1 은 반사 포화로 실패한 1차 촬영"""
+    from fastapi.responses import Response
+    from sim import geom, render
+    if spot not in geom.SPOTS:
+        raise HTTPException(404, f"unknown spot {spot}")
+    key = (spot, bool(sat))
+    if key not in _img_cache:
+        _img_cache[key] = render.spot_image(spot, bool(sat))[0]
+    return Response(_img_cache[key], media_type="image/png", headers={"Cache-Control": "no-cache"})
 
 
 @app.get("/api/codes")
