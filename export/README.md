@@ -1,32 +1,77 @@
-# export
+# export — 단일 HTML 배포 폴더
 
-서버 없이 열리는 **단일 HTML 파일**을 두는 폴더 (원본 `WP5_InspectionDT.html` 과 같은 배포 형태).
+서버·설치·인터넷 없이 **더블클릭만으로 열리는 HTML 파일**
+원본 `WP5_InspectionDT.html`과 같은 배포 형태입니다.
 
-| 파일 | 설명 |
+---
+
+## 1. 어떤 파일을 쓰나요?
+
+| 파일 | 화면 | 용도 |
+|---|---|---|
+| **`WP5_InspectionDT_py_v2.html`** | v2 — 원본 화면 코드 + 파이썬 서버 데이터 | **배포 권장.** 원본과 같은 모습 |
+| `WP5_InspectionDT_py_v1.html` | v1 — 직접 작성한 화면 | 원본보다 단순한 버전 | **활용버전.**
+| `Run_DT_v2.bat` / `Run_DT_v1.bat` | — | 위 파일을 기본 브라우저로 여는 바로가기 |
+
+- 각 HTML은 **약 1.9 MB 파일 하나**입니다. 화면 코드, three.js, 글꼴, 시나리오 데이터가 모두 들어 있습니다.
+- Edge, Chrome에서 열립니다. (Internet Explorer 불가)
+
+## 2. 실행 방법
+
+1. `WP5_InspectionDT_py_v2.html`을 더블클릭합니다. (또는 `Run_DT_v2.bat`)
+2. 위쪽에서 시나리오 1·2·3을 고르고 **재생**을 누릅니다.
+3. 3D 화면: 드래그 = 회전, 휠 = 확대·축소, 오른쪽 드래그 = 이동
+
+처음 보는 분은 **⑧ 간략 설명서 탭**부터 읽으세요.
+
+---
+
+## 3. 배포할 때 넣을 파일
+
+| 구분 | 파일 |
 |---|---|
-| `WP5_InspectionDT_py_v1.html` | **v1 화면**(직접 작성). 화면 코드 · three.js · 글꼴 · 서버가 계산하는 모든 데이터가 한 파일(약 1.9 MB)에 들어 있다. |
-| `WP5_InspectionDT_py_v2.html` | **v2 화면**(원본 화면 코드 + 서버 데이터). 같은 방식으로 한 파일(약 1.9 MB). |
-| `Run_DT_v1.bat`, `Run_DT_v2.bat` | 각 파일을 기본 브라우저로 여는 바로가기 |
+| **필수** | `WP5_InspectionDT_py_v2.html` (또는 v1) |
+| 권장 | `licenses/LICENSE_three.js.txt`, `licenses/LICENSE_Pretendard.txt` — 재배포 조건이라 함께 넣습니다 |
+| 선택 | `Run_DT_v2.bat`, 사용 안내 한 장 |
 
-더블클릭하면 Edge · Chrome 으로 열린다. 설치도 인터넷도 서버도 필요 없다.
+개발용 폴더(`server/`, `tools/`, `web/`, `web2/`, `dt/` 등)는 **배포하지 않습니다.**
 
-## 다시 만들기
+> ⚠️ **전달 전 확인**
+> - 파일 안에 시나리오 수치와 장비·업체명이 그대로 들어 있습니다. 외부 전달은 소속 기관의 보안 기준을 따르세요.
+> - 모든 값은 **가상 데이터**입니다. 받는 분이 실측값으로 오해하지 않도록 전달 메시지에 한 줄 적어 두세요.
 
-코드나 시나리오를 고친 뒤에는 저장소 폴더에서 (가상환경 `dt` 를 켠 상태로):
+---
+
+## 4. 다시 만들기
+
+코드나 시나리오를 고친 뒤에는 HTML을 **반드시 다시 내보내야** 변경이 반영됩니다.
+저장소 폴더에서, 가상환경 `dt`를 켠 상태로 실행합니다.
 
 ```powershell
 python tools/export_html.py        # v1, v2 둘 다
-python tools/export_html.py v2     # v2 만 (v1 도 같은 방식)
+python tools/export_html.py v2     # v2만
+python tools/export_html.py v1     # v1만
 ```
 
-## 만드는 방식
+---
 
-- 서버의 `payloads.py` 가 만드는 데이터(시나리오 3개 · 데이터 사전 · 편차 맵 · 2D 영상)를 파일 안에 JSON/base64 로 내장한다.
-- 화면 모듈(`web/js/*.js`)과 three.js 는 import map 의 `data:` URL 로 연결한다.
-- 화면은 `window.__DT_DATA__` 가 있으면 내장 데이터를, 없으면 서버 `/api/...` 를 쓴다 (v1 `web/js/data.js`, v2 `web2/adapter.js`).
-- v2 는 원본처럼 일반 `<script>` 로 들어가고, 화면 코드(`ui.js`)는 데이터를 준비한 뒤 실행된다.
+## 5. 파일이 만들어지는 방식
 
-## 알아둘 점
+```
+ server/payloads.py ─┐   시나리오 3개 · 데이터 사전 · 편차 맵 · 2D 영상을 계산
+ web/ 또는 web2/    ─┼─▶ tools/export_html.py ─▶ 단일 HTML (export/)
+ three.js · 글꼴    ─┘
+```
 
-- 값은 모두 가상 데이터다. 센서 값을 받는 실시간 연동은 서버 모드(`run_server.bat`)에서만 가능하다.
-- 글꼴(Pretendard)은 이 화면에 쓰는 글자만 남겨 파일 안에 넣었다 (내보낼 때마다 현재 문구 기준으로 다시 만든다).
+- **데이터**: 서버가 계산한 값을 JSON/base64로 파일 안에 넣습니다.
+- **화면 코드**: v1은 import map의 `data:` URL로, v2는 일반 `<script>`로 넣습니다. v2의 화면 코드(`ui.js`)는 데이터를 준비한 뒤 실행됩니다.
+- **서버/내장 자동 선택**: 화면은 `window.__DT_DATA__`가 있으면 내장 데이터를, 없으면 서버 `/api/...`를 씁니다.
+  (v1: `web/js/data.js`, v2: `web2/adapter.js`)
+- **글꼴**: Pretendard에서 화면에 쓰는 글자만 남겨 넣습니다. 내보낼 때마다 현재 문구 기준으로 다시 만들어 글자가 빠지지 않습니다.
+
+---
+
+## 6. 알아둘 점
+
+- 센서 값을 받는 **실시간 연동은 서버 모드**(`run_server.bat`)에서만 가능합니다. 단일 HTML은 값이 고정된 재생용입니다.
+- v1과 v2는 같은 데이터를 쓰지만 화면 코드가 다릅니다. 한쪽을 고쳐도 다른 쪽에는 영향이 없습니다.
