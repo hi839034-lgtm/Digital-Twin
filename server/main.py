@@ -6,7 +6,7 @@ import json
 import sys
 from pathlib import Path
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 
 sys.path.insert(0, str(Path(__file__).parent))  # sim, sources 를 어디서 실행해도 찾게
@@ -19,6 +19,16 @@ app = FastAPI(title="WP5 Inspection DT")
 @app.get("/api/scenarios")
 def scenarios():
     return list_scenarios()
+
+
+@app.get("/api/scenario/{sid}")
+def scenario(sid: str):
+    """원본 SCEN.build + CODES.build 결과 전체 (타임라인 재생은 브라우저가 한다)"""
+    from sim import flows, scen
+    if sid not in scen.DEF:
+        raise HTTPException(404, f"unknown scenario {sid}")
+    sc = scen.build(sid)
+    return {**sc, **flows.build(sc)}
 
 
 @app.get("/api/codes")
