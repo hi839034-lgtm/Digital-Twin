@@ -14,7 +14,7 @@ import payloads  # noqa: E402
 from sources import ScenarioSource, list_scenarios, load_scenario  # noqa: E402
 
 WEB_DIR = Path(__file__).parent.parent / "web"
-WEB2_DIR = Path(__file__).parent.parent / "web2"  # 원본 화면 코드를 가져온 새 화면 (http://127.0.0.1:8000/v2/)
+WEB2_DIR = Path(__file__).parent.parent / "web2"  # v2: 원본 화면 코드를 가져온 화면 (http://127.0.0.1:8000/v2/), v1: web (/v1/ 또는 /)
 app = FastAPI(title="WP5 Inspection DT")
 
 
@@ -99,4 +99,5 @@ async def ws(sock: WebSocket):
 # 맨 마지막에 둔다 (위의 /api, /ws 가 먼저 매칭되도록)
 if WEB2_DIR.exists():
     app.mount("/v2", StaticFiles(directory=WEB2_DIR, html=True), name="web2")
+app.mount("/v1", StaticFiles(directory=WEB_DIR, html=True), name="web_v1")  # 이전 화면(v1) — 기존 주소 "/" 와 같은 내용
 app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")

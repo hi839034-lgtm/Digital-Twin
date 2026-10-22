@@ -15,12 +15,15 @@ WEIGHTS = {400: "Regular", 600: "SemiBold", 700: "Bold"}
 
 
 def collect_chars():
-    """화면에 나올 수 있는 모든 글자: 화면 코드 · CSS · 서버가 내려주는 모든 데이터"""
+    """화면에 나올 수 있는 모든 글자: 두 화면(v1 web, v2 web2)의 코드 · CSS · 서버가 내려주는 모든 데이터"""
     sys.path.insert(0, str(ROOT / "server"))
     import payloads
     text = []
-    for p in [ROOT / "web" / "index.html", ROOT / "web" / "style.css", *sorted((ROOT / "web" / "js").glob("*.js"))]:
-        text.append(p.read_text(encoding="utf-8"))
+    files = [ROOT / "web" / "index.html", ROOT / "web" / "style.css", *sorted((ROOT / "web" / "js").glob("*.js")),
+             ROOT / "web2" / "index.html", ROOT / "web2" / "style.css", ROOT / "web2" / "ui.js", ROOT / "web2" / "adapter.js"]
+    for p in files:  # v1(web) 과 v2(web2) 화면에 나오는 글자를 모두 포함
+        if p.exists():
+            text.append(p.read_text(encoding="utf-8"))
     text.append(json.dumps(payloads.codes(), ensure_ascii=False))
     for sid in payloads.SCENARIOS:
         text.append(json.dumps(payloads.scenario(sid), ensure_ascii=False))

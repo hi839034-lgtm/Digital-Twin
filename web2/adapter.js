@@ -131,7 +131,8 @@
         build: SC => ({ F: SC.F, H: SC.H }), // 계층 간 데이터 흐름은 서버(sim/flows.py)가 시나리오와 함께 준다
       };
       loading.remove();
-      const s = document.createElement('script'); s.src = 'ui.js'; document.body.appendChild(s);
+      const s = document.createElement('script'); const emb = document.getElementById('dt-ui'); if (emb) s.textContent = emb.textContent; else s.src = 'ui.js'; // 내보낸 단일 HTML 은 내장 ui.js 를 쓴다
+      document.body.appendChild(s);
     } catch (e) {
       loading.textContent = '데이터를 불러오지 못했습니다: ' + e.message;
       loading.style.color = '#c00';
