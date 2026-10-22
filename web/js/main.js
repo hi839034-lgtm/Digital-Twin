@@ -8,17 +8,14 @@ import tabSwim from "./tab_swim.js";
 import tabData from "./tab_data.js";
 import tabGuide from "./tab_guide.js";
 import { loadAssets } from "./plots.js";
+import { getJSON, isEmbedded } from "./data.js";
 
 const $ = (s) => document.querySelector(s);
 const TABS = [tabMain, tabAmr, cellTab("3D", "③ 3D 스캔 셀"), cellTab("2D", "④ 2D 비전 셀"), cellTab("UT", "⑤ 초음파 셀"), tabLayer, tabSwim, tabData, tabGuide];
 const STAGE_COL = { in: "#8b95ab", "3D": "#3b6fd6", an: "#9b8cff", "2D": "#3bb08a", UT: "#d69a3b", qc: "#ff6b6b", out: "#8b95ab" };
 const cache = {};
 
-async function api(path) {
-  const r = await fetch(path);
-  if (!r.ok) throw new Error(path + " " + r.status);
-  return r.json();
-}
+const api = getJSON;
 
 async function loadScenario(sid) {
   if (!cache[sid]) cache[sid] = await api("/api/scenario/" + sid);
@@ -89,7 +86,7 @@ async function start() {
     $("#conn").textContent = "서버 연결 실패: " + e.message;
     return;
   }
-  $("#conn").textContent = "서버 연결됨";
+  $("#conn").textContent = isEmbedded ? "내장 데이터 (서버 없이 실행)" : "서버 연결됨";
   $("#scen").innerHTML = ["S1", "S2", "S3"].map((s) => `<option value="${s}">${esc(cache[s].def.name)}</option>`).join("");
   $("#tabs").innerHTML = TABS.map((t) => `<button role="tab" data-tab="${t.id}">${esc(t.label)}</button>`).join("");
   $("#panes").innerHTML = TABS.map((t) => `<section class="pane" id="t-${t.id}"></section>`).join("");

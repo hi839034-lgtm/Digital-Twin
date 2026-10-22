@@ -2,14 +2,15 @@
 브라우저: http://127.0.0.1:8000
 """
 import asyncio
-import json
 import sys
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 
 sys.path.insert(0, str(Path(__file__).parent))  # sim, sources 를 어디서 실행해도 찾게
+import payloads  # noqa: E402
 from sources import ScenarioSource, list_scenarios, load_scenario  # noqa: E402
 
 WEB_DIR = Path(__file__).parent.parent / "web"
@@ -21,60 +22,39 @@ def scenarios():
     return list_scenarios()
 
 
-_scenario_cache = {}
-
-
 @app.get("/api/scenario/{sid}")
 def scenario(sid: str, full: bool = False):
-    """원본 SCEN.build + planWin(로봇 경로 계획) + CODES.build 결과 전체 (타임라인 재생은 브라우저가 한다).
+    """시나리오 + 셀 로봇 경로 계획 + 계층 간 데이터 흐름 (타임라인 재생은 브라우저가 한다).
     full=true 는 원본과 숫자 대조용 전체 출력 (용량이 크다)."""
-    from sim import flows, geom, kin, plan, scen
-    if sid not in scen.DEF:
+    try:
+        return payloads.scenario(sid, full)
+    except KeyError:
         raise HTTPException(404, f"unknown scenario {sid}")
-    if (sid, full) not in _scenario_cache:
-        sc = scen.build(sid)
-        for c in sc["wins"]:
-            for w in sc["wins"][c]:
-                w["plan"] = plan.to_json(plan.plan_win(w), full)
-        consts = {"CX": scen.CX, "LANE": scen.LANE, "BAY": scen.BAY, "DOCKZ": scen.DOCKZ, "INX": scen.INX,
-                  "JX": scen.JX, "STORE": scen.STORE, "RETURN": scen.RETURN, "SPEED": scen.SPEED,
-                  "HOME": kin.HOME, "rois": {k: len(v) for k, v in geom.ROIS.items()}, "spots": {k: v["label"] for k, v in geom.SPOTS.items()}}
-        _scenario_cache[(sid, full)] = {**sc, **flows.build(sc), "consts": consts,
-                                        "geom": {"rois": geom.ROIS, "spots": geom.SPOTS, "lof": geom.LOF}}
-    return _scenario_cache[(sid, full)]
-
-
-_img_cache = {}
 
 
 @app.get("/api/devgrid/{part}")
 def devgrid(part: str):
-    """시편 윗면의 CAD 대비 편차 맵 격자 [mm] (3D 스캔 결과의 가상값). v 는 행(y) 우선 1차원 배열"""
-    from sim import render
-    if part not in ("A", "B", "C"):
+    """시편 윗면의 CAD 대비 편차 맵 격자 [mm] (3D 스캔 결과의 가상값)"""
+    try:
+        return payloads.devgrid(part)
+    except KeyError:
         raise HTTPException(404, f"unknown part {part}")
-    g = render.dev_grid(part, 2)
-    g["v"] = [round(x, 5) for x in g["v"]]
-    return g
 
 
 @app.get("/api/spot/{spot}")
 def spot_image(spot: str, sat: int = 0):
     """2D 국부 촬영 지점의 가상 영상 (PNG). sat=1 은 반사 포화로 실패한 1차 촬영"""
-    from fastapi.responses import Response
-    from sim import geom, render
-    if spot not in geom.SPOTS:
+    try:
+        png = payloads.spot_png(spot, bool(sat))
+    except KeyError:
         raise HTTPException(404, f"unknown spot {spot}")
-    key = (spot, bool(sat))
-    if key not in _img_cache:
-        _img_cache[key] = render.spot_image(spot, bool(sat))[0]
-    return Response(_img_cache[key], media_type="image/png", headers={"Cache-Control": "no-cache"})
+    return Response(png, media_type="image/png", headers={"Cache-Control": "no-cache"})
 
 
 @app.get("/api/codes")
 def codes():
-    """계층 · 공정 · 데이터 사전 D00~D30 (원본에서 tools/extract_codes.py 로 추출)"""
-    return json.loads((Path(__file__).parent / "data" / "codes.json").read_text(encoding="utf-8"))
+    """계층 · 공정 · 데이터 사전 D00~D30"""
+    return payloads.codes()
 
 
 @app.websocket("/ws")

@@ -1,6 +1,7 @@
 // 2D 그림: 편차 맵 · 가상 2D 영상 · ⑦ 탭 데이터 미리보기. 원본의 그림 코드를 옮긴 것이고,
 // 영상과 편차 격자는 서버(server/sim/render.py)가 만들어 준다.
-import { S, clamp, codeOf, subName, layerName, procName, mainWin } from "./state.js";
+import { S, clamp, subName, layerName, procName, mainWin } from "./state.js";
+import { getBlob, getJSON } from "./data.js";
 
 const UIF = "'Malgun Gothic',sans-serif", MONO = "Consolas,monospace";
 const C = { muted: "#8b95ab", line: "#2a3350", fg: "#e6e9ef", surf: "#1d2434", bad: "#ff6b6b", good: "#3ecf8e", geo: "#4f8cff", img: "#3ecf8e", wave: "#c678dd", c3D: "#4f8cff", c2D: "#3ecf8e" };
@@ -10,12 +11,12 @@ export const assets = { dev: {}, img: {} };
 
 export async function loadAssets(sc) {
   const jobs = [];
-  if (!assets.dev[sc.P]) jobs.push(fetch("/api/devgrid/" + sc.P).then((r) => r.json()).then((g) => { assets.dev[sc.P] = g; }));
+  if (!assets.dev[sc.P]) jobs.push(getJSON("/api/devgrid/" + sc.P).then((g) => { assets.dev[sc.P] = g; }));
   const w2 = sc.wins["2D"].find((w) => w.main);
   for (const s of w2.shots) for (const sat of [0, 1]) {
     const key = s[0] + (sat ? ":sat" : "");
     if (assets.img[key] || (sat && !w2.shots.some((x) => x[0] === s[0] && x[2]))) continue;
-    jobs.push(fetch(`/api/spot/${s[0]}?sat=${sat}`).then((r) => r.blob()).then(createImageBitmap).then((b) => { assets.img[key] = b; }));
+    jobs.push(getBlob(`/api/spot/${s[0]}?sat=${sat}`).then(createImageBitmap).then((b) => { assets.img[key] = b; }));
   }
   await Promise.all(jobs);
 }
