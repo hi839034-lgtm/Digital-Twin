@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WP5 검사셀 디지털트윈</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="stage" id="stage">
+  <header class="hdr">
+    <div class="ttl">
+      <h1>WP5 통합 검사 플랫폼 디지털트윈</h1>
+      <p class="sub">AMR 2대 · 3D 스캔 → 자율 분석 → 2D 국부 비전 → 초음파 → QC → 적재장 / 반품 라인 · 1차년도 목표 시나리오 재생 시안 · 수치는 예시 파라미터의 가상 데이터 · 데이터 코드 D00–D26은 초음파 DT와 공통</p>
+    </div>
+    <div class="seg" role="group" aria-label="시나리오 선택">
+      <button class="scen" data-s="S1" aria-pressed="true">시나리오 1 · 시편 C</button>
+      <button class="scen" data-s="S2" aria-pressed="false">시나리오 2 · 시편 A</button>
+      <button class="scen" data-s="S3" aria-pressed="false">시나리오 3 · 시편 B</button>
+    </div>
+    <span id="scen-desc"></span>
+  </header>
+
+  <section class="bar" aria-label="시나리오 재생">
+    <button class="btn" id="play">재생</button>
+    <button class="btn ghost" id="restart">처음으로</button>
+    <button class="btn ghost" id="stepPrev" title="이전 데이터 교환(상자)으로 · 레이어 흐름도 탭에서는 ← 키">⏮ 이전</button><button class="btn ghost" id="stepNext" title="다음 데이터 교환(상자)으로 · 레이어 흐름도 탭에서는 → 키">⏭ 다음</button>
+    <label class="small" for="speed">속도 <select id="speed"><option value="4">4×</option><option value="8" selected>8×</option><option value="16">16×</option></select></label>
+    <span class="tlabel" id="tlabel"></span>
+    <div class="tlwrap"><canvas id="tl" aria-label="시나리오 타임라인 (클릭해 이동)"></canvas></div>
+    <span class="small">▲ 품질 미달 → 보정 · 깜빡이는 테두리 = 지금 하는 일</span>
+    <button class="btn ghost" id="fs" hidden>전체 화면</button>
+  </section>
+
+  <nav class="tabs" role="tablist" aria-label="DT 화면">
+    <button class="tab" role="tab" aria-controls="t-main" aria-selected="true">① 라인 운영 <small>디엑셀</small></button>
+    <button class="tab" role="tab" aria-controls="t-AMR" aria-selected="false">② AMR 물류 <small>디엑셀 · WP6 관제</small></button>
+    <button class="tab" role="tab" aria-controls="t-3D" aria-selected="false">③ 3D 스캔 셀 <small>코보시스</small></button>
+    <button class="tab" role="tab" aria-controls="t-2D" aria-selected="false">④ 2D 비전 셀 <small>코보시스</small></button>
+    <button class="tab" role="tab" aria-controls="t-UT" aria-selected="false">⑤ 초음파 셀 <small>코보시스</small></button>
+    <button class="tab" role="tab" aria-controls="t-layer" aria-selected="false">⑥ 실행 기록 · 레이어</button>
+    <button class="tab" role="tab" aria-controls="t-swim" aria-selected="false">⑥-2 레이어 흐름도</button>
+    <button class="tab" role="tab" aria-controls="t-data" aria-selected="false">⑦ 데이터 코드 · 저장 형식</button>
+    <button class="tab" role="tab" aria-controls="t-guide" aria-selected="false">⑧ 간략 설명서</button>
+  </nav>
+
+  <section id="t-main" role="tabpanel" aria-label="라인 운영" class="p-main">
+    <div class="r1">
+      <div class="sbox">
+        <div class="cellrow"><div class="ov" id="ov-3D"></div><div class="ov" id="ov-2D"></div><div class="ov" id="ov-UT"></div></div>
+        <div class="scene" id="scene-main"><span class="hint">드래그: 회전 · 휠: 확대</span></div>
+      </div>
+      <div class="rcol">
+        <div class="flow" id="flow" aria-label="공정 단계"></div>
+        <div class="nn row" id="nn-main"></div>
+        <div class="lower">
+          <div class="card"><div class="hrow"><h2>3D 이후 자율 분석 (OCS)</h2><span class="chip script">규칙 기반</span><span class="pill" id="an-state"></span></div>
+            <div class="ans" id="an-steps"></div></div>
+          <div class="card c-fill"><div class="hrow"><h2>데이터 교환 · AMR</h2><span class="small" id="amr-mini"></span></div>
+            <ul class="log" id="log"></ul></div>
+        </div>
+      </div>
+    </div>
+    <div class="r2">
+      <div class="card c-3d dcard" id="dc-3D"><div class="hrow"><h3>① 형상 · 3D 스캔</h3><span class="pill" id="st-3D"></span></div>
+        <div class="cv"><canvas id="db-3d" aria-label="CAD 대비 형상 편차 맵"></canvas></div>
+        <div class="cbar">편차 −1.0<i style="background:linear-gradient(90deg,#2357C9,#E9EEF0,#C2410C)"></i>+1.0 mm · 회색 띠 = 플랜지 · 점선 = 용접선</div>
+        <p class="cap" id="db-3d-cap"></p>
+        <div class="dline" id="ln-3D"></div></div>
+      <div class="card c-2d dcard" id="dc-2D"><div class="hrow"><h3>② 표면 · 2D 국부 비전</h3><span class="pill" id="st-2D"></span></div>
+        <div class="maprow"><div class="cv"><canvas id="db-2d-map" aria-label="2D 검사 부위 위치"></canvas></div>
+          <div style="display:grid;gap:2px;align-content:start"><p class="cap" id="db-2d-cap"></p><p class="note"><span class="sw" style="background:#FF4D4D"></span>기공·균열·언더컷 <span class="sw" style="background:#FFB020"></span>언더필·덴트</p></div></div>
+        <div class="thumbs" id="db-2d-imgs"></div>
+        <div class="dline" id="ln-2D"></div></div>
+      <div class="card c-ut dcard" id="dc-UT"><div class="hrow"><h3>③ 내부 · 초음파 (3D 모델 위 중첩)</h3><span class="pill" id="st-UT"></span></div>
+        <div class="mini" id="db-ut"><span class="hint">드래그: 회전</span></div>
+        <div class="cbar">C-스캔 진폭<i style="background:linear-gradient(90deg,#2ECC71,#FFB020,#FF3B30)"></i>낮음→높음 · 빨간 상자 = 내부 지시 · 회색 = 재취득 대상</div>
+        <p class="cap" id="db-ut-cap"></p>
+        <div class="dline" id="ln-UT"></div></div>
+      <div class="card dcard" id="dc-qc"><div class="hrow"><h3>④ QC 종합 · 이송</h3><span class="chip script">스크립트</span><span class="pill" id="st-qc"></span></div><div id="db-qc" style="display:grid;gap:5px"></div><div class="dline" id="ln-qc"></div></div>
+    </div>
+  </section>
+
+  <section id="t-AMR" role="tabpanel" aria-label="AMR 물류" class="p-cell" hidden>
+    <div class="scene cellscene" id="scene-AMR"><span class="covl"></span><div class="plegend"><span><span class="sw" style="background:#0B7A85"></span>AMR-1 경로 (대상 시편)</span><span><span class="sw" style="background:#6A4C9F"></span>AMR-2 경로 (다음 시편)</span><span><span class="sw" style="background:#FF3B30"></span>도킹 오차 (×20 확대)</span></div><span class="hint">드래그: 회전 · 휠: 확대</span></div>
+    <div class="col col2">
+      <div class="nn" id="nn-AMR"></div>
+      <div class="card c-fill"><div class="hrow"><h2>미션 목록</h2><div class="seg" role="group" aria-label="AMR 선택"><button class="amrsel" data-a="0" aria-pressed="true">AMR-1</button><button class="amrsel" data-a="1" aria-pressed="false">AMR-2</button></div></div>
+        <ul class="mlist" id="mlist"></ul></div>
+    </div>
+    <div class="col col3a">
+      <div class="card"><div class="hrow"><h2>AMR 관제</h2><span class="chip assume">속도 0.6 m/s · 배터리 가정</span></div><table><thead><tr><th>AMR</th><th>상태</th><th>작업</th><th>위치</th><th class="num">속도</th><th class="num">배터리</th></tr></thead><tbody id="fleet"></tbody></table></div>
+      <div class="card"><div class="hrow"><h2>도킹 오차 → 3D 정합 보정</h2><span class="chip calc">가상 계산</span><span class="cd on meta">D04-01</span></div>
+        <table><thead><tr><th>AMR · 도크</th><th class="num">실제 dx · dy</th><th class="num">dθ</th><th class="num">추정 잔차</th><th class="num">툴 끝 오차</th></tr></thead><tbody id="docks"></tbody></table>
+        <p class="note">셀마다 도착하면 러프 스캔으로 도킹 오차를 추정해 로봇 경로를 부품 좌표로 옮깁니다. 보정하지 않으면 툴 끝 오차가 약 10 mm입니다.</p></div>
+      <div class="card c-joint"><div class="hrow"><h2>AMR 일정</h2><span class="small">세로선 = 현재</span></div><div class="cv"><canvas id="amr-gantt" aria-label="AMR 일정"></canvas></div>
+        <pre id="amr-msgs">—</pre></div>
+    </div>
+  </section>
+
+  <section id="t-3D" role="tabpanel" aria-label="3D 스캔 셀" class="p-cell" hidden>
+    <div class="scene cellscene" id="scene-3D"><span class="covl"></span><div class="plegend"><span><span class="sw" style="background:#0B7A85"></span>초기 경로 (CAD 법선)</span><span><span class="sw" style="background:#E08A00"></span>보정 경로 (경사 패스)</span><span><span class="sw" style="background:#FF3B30"></span>툴 끝 위치</span></div><span class="hint">드래그: 회전 · 휠: 확대</span></div>
+    <div class="col col2"><div class="nn"></div><div class="card"><h2>경로 생성 → 이동 → 품질 판단 → 보정</h2><ol class="steps"></ol></div></div>
+    <div class="col col3">
+      <div class="card"><h2>셀 구성</h2><ul class="cfg"></ul><p class="job mono"></p></div>
+      <div class="card"><h2>품질 미달 시 보정 (전 / 후)</h2><div class="qfix"></div></div>
+      <div class="card"><div class="hrow"><h2>경로 검증</h2><span class="chip calc">가상 계산</span><span class="cd on meta">D13-01</span></div><table><thead><tr><th>경로</th><th class="num">도달</th><th class="num">최소 여유</th><th class="num">툴 끝 오차</th><th>판정</th></tr></thead><tbody class="ptab"></tbody></table></div>
+      <div class="card c-joint"><div class="hrow"><h2>로봇 관절각</h2><span class="cd on ts">D15-01</span><span class="small">세로선 = 현재 · 빨간 점선 = 품질 미달</span></div><div class="cv"><canvas class="jplot" aria-label="관절각 그래프"></canvas></div><p class="note">6축 근사 모델 (도달 약 1.6 m) · 역기구학으로 각 점의 관절각을 구하고 링크·툴과 AMR·지그·판재·플랜지 사이 여유를 계산</p></div>
+    </div>
+  </section>
+
+  <section id="t-2D" role="tabpanel" aria-label="2D 비전 셀" class="p-cell" hidden>
+    <div class="scene cellscene" id="scene-2D"><span class="covl"></span><div class="plegend"><span><span class="sw" style="background:#0B7A85"></span>초기 촬영 포즈 (수직)</span><span><span class="sw" style="background:#E08A00"></span>보정 포즈 (25° 기울임)</span><span><span class="sw" style="background:#FF3B30"></span>툴 끝 위치</span></div><span class="hint">드래그: 회전 · 휠: 확대</span></div>
+    <div class="col col2"><div class="nn"></div><div class="card"><h2>포즈 생성 → 촬영 → 품질 판단 → 보정</h2><ol class="steps"></ol></div></div>
+    <div class="col col3">
+      <div class="card"><h2>셀 구성</h2><ul class="cfg"></ul><p class="job mono"></p></div>
+      <div class="card"><h2>품질 미달 시 보정 (전 / 후)</h2><div class="qfix"></div></div>
+      <div class="card"><div class="hrow"><h2>포즈 검증</h2><span class="chip calc">가상 계산</span><span class="cd on meta">D13-01</span></div><table><thead><tr><th>포즈</th><th class="num">도달</th><th class="num">최소 여유</th><th class="num">툴 끝 오차</th><th>판정</th></tr></thead><tbody class="ptab"></tbody></table></div>
+      <div class="card c-joint"><div class="hrow"><h2>로봇 관절각</h2><span class="cd on ts">D15-01</span><span class="small">세로선 = 현재 · 빨간 점선 = 품질 미달</span></div><div class="cv"><canvas class="jplot" aria-label="관절각 그래프"></canvas></div><p class="note">촬영 포즈는 3D가 넘긴 ROI 중심과 표면 법선으로 만듭니다. 장면의 점선 = 카메라 광축</p></div>
+    </div>
+  </section>
+
+  <section id="t-UT" role="tabpanel" aria-label="초음파 셀" class="p-cell" hidden>
+    <div class="scene cellscene" id="scene-UT"><span class="covl"></span><div class="plegend"><span><span class="sw" style="background:#0B7A85"></span>초기 주사 경로</span><span><span class="sw" style="background:#E08A00"></span>보정 주사 경로 · 재접촉 지점</span><span><span class="sw" style="background:#2ECC71"></span>접촉 궤적</span><span><span class="sw" style="background:#FF3B30"></span>툴 끝 위치</span></div><span class="hint">드래그: 회전 · 휠: 확대</span></div>
+    <div class="col col2"><div class="nn"></div><div class="card"><h2>주사 경로 생성 → 접촉 → 게이트 → 보정</h2><ol class="steps"></ol></div></div>
+    <div class="col col3">
+      <div class="card"><h2>셀 구성</h2><ul class="cfg"></ul><p class="job mono"></p></div>
+      <div class="card"><h2>품질 미달 시 보정 (전 / 후)</h2><div class="qfix"></div></div>
+      <div class="card"><div class="hrow"><h2>주사 경로 검증</h2><span class="chip calc">가상 계산</span><span class="cd on meta">D13-01</span></div><table><thead><tr><th>경로</th><th class="num">도달</th><th class="num">최소 여유</th><th class="num">툴 끝 오차</th><th>판정</th></tr></thead><tbody class="ptab"></tbody></table></div>
+      <div class="card c-joint"><div class="hrow"><h2>로봇 관절각</h2><span class="cd on ts">D15-01</span><span class="small">세로선 = 현재 · 빨간 점선 = 품질 미달</span></div><div class="cv"><canvas class="jplot" aria-label="관절각 그래프"></canvas></div><p class="note">접촉 구간은 툴 끝의 판재 접촉을 허용합니다. 원안(y≤160)은 플랜지 −7 mm 간섭 → y≤140. 음향 해석은 초음파 DT(별도 뷰어) 연계</p></div>
+    </div>
+  </section>
+
+  <section id="t-layer" role="tabpanel" aria-label="실행 기록 · 레이어" class="p-layer" hidden>
+    <div class="col col2">
+      <div class="card"><div class="hrow"><h2>시스템 계층</h2><span class="small">통합 OCS + WP5 6개 스택 · 누르면 그 계층만 표시</span></div><div class="lstack" id="lstack"></div></div>
+      <div class="card"><div class="hrow"><h2>지금 오가는 데이터</h2></div><div class="xcard" id="xcur"></div></div>
+    </div>
+    <div class="lmain">
+      <div class="nn row" id="nn-layer"></div>
+      <div class="card c-fill"><div class="hrow"><h2>공정 × 계층 데이터 맵</h2><span class="small">각 칸 = 그 공정에서 그 계층이 보내거나(테두리) 받는(채움) 데이터 코드 · 흐림 = 아직 오기 전 · 코드에 마우스를 올리면 세부 코드</span></div><div class="dmap" id="dmap"></div></div>
+      <div class="lbottom">
+        <div class="card c-fill"><div class="hrow"><h2>단위 공정 사이에 넘기는 데이터</h2></div><div class="hlist" id="hlist"></div></div>
+        <div class="card c-fill"><div class="hrow"><h2>실행 기록</h2><span class="small" id="flog-n"></span></div><ul class="log flog" id="flog"></ul></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="t-data" role="tabpanel" aria-label="데이터 코드 · 저장 형식" class="p-data" hidden>
+    <div class="card c-fill"><div class="hrow"><h2>데이터 사전 D00–D30</h2><span class="chip ext">D27–D30 플랫폼 확장(안)</span><span class="small">행을 누르면 오른쪽에 세부 정보 · ● = 이번 시나리오에서 이미 생성</span></div>
+      <table class="dict"><thead><tr><th>코드</th><th>이름</th><th>형식 · 종류</th><th>저장</th><th>소스 계층</th><th>생성 공정</th><th>활용 공정</th><th>이번 시나리오</th></tr></thead><tbody id="dict"></tbody></table></div>
+    <div class="card detail" id="detail"></div>
+  </section>
+
+  <section id="t-swim" role="tabpanel" aria-label="레이어 흐름도" class="p-swim" hidden>
+    <div class="card swimc">
+      <div class="swctl">
+        <h2>레이어 흐름도</h2>
+        <button class="btn" id="sw-play">▶ 재생</button><button class="btn ghost" id="sw-prev">⏮ 이전 상자</button><button class="btn ghost" id="sw-next">⏭ 다음 상자</button><button class="btn ghost" id="sw-first">↻ 처음부터</button>
+        <span class="tlabel" id="sw-pos">상자 0 / 0</span><span class="small">← → 키로도 이동</span>
+        <label class="small" for="sw-zoom">크기 <select id="sw-zoom"><option value="1">100 %</option><option value="0.7">70 %</option><option value="0.45">45 %</option><option value="0">전체 보기</option></select></label>
+        <label class="tog"><input type="checkbox" id="sw-dim" checked>앞으로 진행할 흐름 흐리게</label>
+        <label class="tog"><input type="checkbox" id="sw-follow" checked>재생 위치 따라가기</label>
+        <span class="swlg"><span><i></i>상자 = 보내는 계층의 데이터</span><span>화살표 끝 = 받는 계층</span><span><i class="dash"></i>계층 안 처리</span><span><i class="glow"></i>지금</span></span>
+      </div>
+      <div class="swbody"><div class="swlanes" id="sw-lanes"></div><div class="swscroll" id="sw-scroll"><svg id="sw-svg" aria-label="계층별 데이터 흐름도"></svg></div></div>
+    </div>
+    <div class="card swside" id="sw-side"></div>
+  </section>
+
+  <section id="t-guide" role="tabpanel" aria-label="간략 설명서" class="p-guide" hidden>
+    <div class="gnav"><h2>간략 설명서</h2><div class="seg" role="group" aria-label="설명서 쪽"><button class="gpage" data-g="g1" aria-pressed="true">개요 · 시나리오</button><button class="gpage" data-g="g2" aria-pressed="false">탭별 요령 · 용어</button></div><span class="small">처음 보는 분은 이 쪽을 먼저 읽고 ① 탭에서 ▶ 재생을 누르세요</span></div>
+    <div class="gp" id="g1">
+      <div class="gtop">
+        <div class="card gtxt"><h2>이 데모는</h2>
+          <p>용접 시편 A · B · C를 AMR 2대가 3D 스캔 → 자율 분석 → 2D 국부 비전 → 초음파 → QC 순서로 옮기며 검사하고, 결과에 따라 적재장이나 반품 라인으로 보내는 <b>통합 검사 플랫폼</b>의 1차년도 목표 시나리오를 재생합니다.</p>
+          <p>셀에 도착할 때마다 AMR 도킹 오차를 러프 스캔으로 추정해 로봇 경로를 부품 좌표로 옮기고, 검사 품질이 기준에 못 미치면 원인에 맞춰 경로 · 자세 · 접촉을 바꿔 <b>스스로 다시 측정</b>합니다. 3D 스캔 결과를 보고 다음 공정과 촬영 · 주사 대상을 정하는 일은 OCS의 자율 분석이 맡습니다.</p>
+          <p>처음 보는 분은 ① 탭에서 ▶ 재생을 누르고 "지금 하는 일 · 결과 · 다음 할 일" 두 칸을 따라 읽은 뒤, ⑥ · ⑥-2 탭에서 데이터가 어느 계층에서 어느 계층으로 가는지 보세요.</p></div>
+        <div class="card"><h2>핵심 정보</h2><div class="gfacts">
+          <span>검사 대상</span><span>용접 시편 300×200×16 mm 맞대기 + 플랜지 · A 정상 · B 모재 덴트 · C 용접부 표면 결함 + 내부 융합불량</span>
+          <span>플랫폼</span><span>3D 스캔 · 2D 비전 · 초음파 셀 3개, 셀마다 6축 로봇 (근사 모델), AMR 2대 (0.6 m/s)</span>
+          <span>숨겨 둔 조건</span><span>작업마다 AMR 도킹 오차 ±8 mm · ±1.2°, 시나리오별 품질 미달 (커버리지 · 반사 포화 · 접촉 불량 · 프로브 기울어짐)</span>
+          <span>판정 기준</span><span>형상 편차 ±0.5 mm · 표면 균열·기공·언더컷 0건 · 내부 −20 dB 검출선 · 게이트: 커버리지 95 %, 신뢰도 0.70, 후면 에코 50 %</span>
+          <span>시스템 계층</span><span>통합 OCS + WP5 6개 스택. 이 화면은 01 운영 · 제어 (디엑셀)와 02 디지털트윈 (코보시스)</span>
+          <span>데이터 코드</span><span>D00–D26 = 초음파 DT와 공통, D27–D30 = 플랫폼 확장(안)</span></div></div>
+      </div>
+      <div class="card"><div class="hrow"><h2>데모 시나리오 — 공정 단계</h2><span class="small">카드의 열기 → 를 누르면 그 단계를 자세히 보는 탭으로 갑니다</span></div>
+        <div class="gsteps" id="g-steps"></div></div>
+      <div class="card c-fill"><div class="hrow"><h2>시나리오별로 실제로 일어난 일</h2><span class="small">숫자는 이 화면이 재생하는 시나리오 데이터의 값 · 테두리 = 지금 고른 시나리오 · 카드를 누르면 그 시나리오로 바뀝니다</span></div>
+        <div class="gscen" id="g-scen"></div></div>
+    </div>
+    <div class="gp" id="g2" hidden>
+      <div class="gtabs" id="g-tabs"></div>
+      <div class="gfoot">
+        <div class="card"><h2>용어 · 기호</h2><div class="gterm">
+          <div><b>도킹 오차</b>AMR이 도크에 멈춘 위치 · 각도와 기준의 차이 (dx · dy · dθ). D04-01</div>
+          <div><b>3D 정합 보정</b>러프 스캔으로 도킹 오차를 추정해 로봇 경로를 부품 좌표로 옮기는 것</div>
+          <div><b>커버리지</b>필수 검사면 중 점군을 확보한 비율 (기준 95 %). D20-05</div>
+          <div><b>신뢰도 (2D)</b>판정이 결함 유무를 믿을 수 있는 정도 (기준 0.70). 반사가 포화되면 낮아짐</div>
+          <div><b>후면 에코</b>초음파가 판재 바닥에서 되돌아온 신호 크기 (%FSH). 접촉 상태 판단 (기준 50 %)</div>
+          <div><b>ROI</b>3D 편차가 기준을 넘는 관심 영역. 2D 촬영 대상이 됨. D19-01</div>
+          <div><b>툴 끝 오차</b>보정 후 로봇 툴 끝과 실제 목표 위치의 차이</div>
+          <div><b>최소 여유</b>로봇 링크 · 툴과 AMR · 지그 · 판재 · 플랜지 사이 최단 거리 (20 mm 미만 = 주의)</div>
+          <div><b>저장 E · O · M</b>E 현장 엣지 · O 서버 객체 저장소 (원본 파일) · M 서버 메타 DB (ID · 상태 · 판정)</div>
+          <div><b>라벨</b>가상 계산 = 화면에서 계산 · 스크립트 = 정해 둔 값 재생 · 가정 = 설정값</div></div></div>
+        <div class="card"><h2>알아둘 점</h2><ul class="gnote">
+          <li>1차년도 목표 시나리오 재생입니다. 일정 · 라우팅 · 판정 · 초음파 결과값은 스크립트이고, 실측 데이터 · 판정 AI · 실시간 연계는 이후 연차 범위입니다.</li>
+          <li>로봇은 6축 근사 모델이고, 도달 · 충돌은 링크 캡슐과 상자 모델로 계산했습니다.</li>
+          <li>2D 영상은 시편 형상 모델로 만든 가상 영상, 초음파 결과는 초음파 DT 뷰어의 가상 계산을 재생합니다.</li>
+          <li>D27–D30과 일부 세부 코드는 플랫폼 확장(안)이며 데이터 계약 v0.1에서 확정해야 합니다. AMR 속도 · 배터리는 가정값입니다.</li></ul></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot" aria-label="범례 · 연차별 범위">
+    <span class="lg"><span class="chip calc">가상 계산</span>IK·충돌·도킹 보정·형상·영상</span>
+    <span class="lg"><span class="chip script">스크립트</span>일정·라우팅·판정·UT 값</span>
+    <span class="lg"><span class="chip assume">가정</span>근사 로봇·배치·AMR</span>
+    <b>연차별 전환</b>
+    <span class="yr now0">1차 2026 목표 시나리오 재생</span><span class="yr">2차 실측 데이터·단위 AI</span><span class="yr">3차 자율 재검사·검사 Agent</span><span class="yr">4차 모듈 간 실시간 연계</span><span class="yr">5차 테스트베드 실물</span>
+  </footer>
+</div>
+<script src="vendor/three.r128.min.js"></script>
+<script src="vendor/OrbitControls.r128.js"></script>
+<script src="adapter.js"></script>
+</body>
+</html>

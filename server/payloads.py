@@ -29,10 +29,11 @@ def scenario(sid, full=False):
         for c in sc["wins"]:
             for w in sc["wins"][c]:
                 w["plan"] = plan.to_json(plan.plan_win(w), full)
+                w["dockBefore"] = plan.dock_before(w)
         consts = {"CX": scen.CX, "LANE": scen.LANE, "BAY": scen.BAY, "DOCKZ": scen.DOCKZ, "INX": scen.INX,
                   "JX": scen.JX, "STORE": scen.STORE, "RETURN": scen.RETURN, "SPEED": scen.SPEED,
                   "HOME": kin.HOME, "rois": {k: len(v) for k, v in geom.ROIS.items()},
-                  "spots": {k: v["label"] for k, v in geom.SPOTS.items()}}
+                  "spots": {k: v["label"] for k, v in geom.SPOTS.items()}, "ANALYSIS": scen.ANALYSIS}
         return {**sc, **flows.build(sc), "consts": consts, "geom": {"rois": geom.ROIS, "spots": geom.SPOTS, "lof": geom.LOF}}
 
     return _memo(("scenario", sid, full), make)

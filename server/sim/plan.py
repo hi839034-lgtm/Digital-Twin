@@ -89,3 +89,17 @@ def to_json(p, full=False):
                      "clear": r["clear"]["d"]} for r in sg["res"]["res"]]
         segs.append(d)
     return {"K": p["K"], "segs": segs}
+
+
+def dock_before(w):
+    """3D 정합 보정을 하지 않았을 때(공칭 도킹 자세로 짠 경로를 실제 자세에 적용)의 툴 끝 오차 [mm].
+    ② AMR 탭의 도킹 표(보정 전 / 후 비교)에 쓴다 (원본 AMRT.docks)."""
+    act = kin.Ctx(w["pose"])
+    if w["cell"] == "3D":
+        path = kin.scan_passes(kin.NOM, ["P1"])[0]
+    elif w["cell"] == "2D":
+        sp = geom.SPOTS[w["shots"][0][0]]
+        path = kin.vision_pose(kin.NOM, sp["c"][0], sp["c"][1], w["shots"][0][1], "V")
+    else:
+        path = kin.ut_path_t(kin.NOM, 140, "U", 0)
+    return kin.tip_error(kin.solve_path(path, kin.HOME, act), act)
