@@ -2,6 +2,7 @@
 브라우저: http://127.0.0.1:8000
 """
 import asyncio
+import json
 import sys
 from pathlib import Path
 
@@ -18,6 +19,12 @@ app = FastAPI(title="WP5 Inspection DT")
 @app.get("/api/scenarios")
 def scenarios():
     return list_scenarios()
+
+
+@app.get("/api/codes")
+def codes():
+    """계층 · 공정 · 데이터 사전 D00~D30 (원본에서 tools/extract_codes.py 로 추출)"""
+    return json.loads((Path(__file__).parent / "data" / "codes.json").read_text(encoding="utf-8"))
 
 
 @app.websocket("/ws")

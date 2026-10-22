@@ -1,0 +1,922 @@
+{
+  "layers": [
+    {
+      "id": "L0",
+      "name": "통합 OCS",
+      "sub": "MES · PLM (WP1)",
+      "role": "작업지시 · 제품 정보 · 도면 · 3D 형상, 결과 보고 수신",
+      "sw": "MES · PLM",
+      "io": "작업지시 · 결과 보고"
+    },
+    {
+      "id": "L1",
+      "name": "01 운영 · 제어",
+      "sub": "검사 OCS · 품질 기준",
+      "role": "검사계획 · 모듈 선택 · 라우팅 · 재검사 · QC 판정",
+      "sw": "FastAPI · Recipe Manager · MQTT/OPC UA",
+      "io": "REST · MQTT 이벤트"
+    },
+    {
+      "id": "L2",
+      "name": "02 디지털트윈",
+      "sub": "플랫폼 · 셀 DT",
+      "role": "셀 · AMR · 로봇 DT, 경로 생성 · 도달성 · 충돌 검증",
+      "sw": "Isaac Sim · OpenUSD (1차: 웹 DT)",
+      "io": "OpenUSD · ROS 2 Bridge"
+    },
+    {
+      "id": "L3",
+      "name": "03 검사 AI",
+      "sub": "판정 · 신뢰도",
+      "role": "3D ROI · 2D 결함 · UT 지시 판정, 품질 게이트, 재검 조건",
+      "sw": "Python · PyTorch · ONNX Runtime",
+      "io": "Result JSON · 모델 버전"
+    },
+    {
+      "id": "L4",
+      "name": "04 데이터 · 통합",
+      "sub": "저장 · 계보",
+      "role": "공통 ID · 스키마, 엣지–서버 파이프라인, 객체 저장소 · 메타 DB",
+      "sw": "OPC Server · Historian · 객체 저장소 · 메타 DB",
+      "io": "OPC UA · 공통 ID · 시계열"
+    },
+    {
+      "id": "L5",
+      "name": "05 엣지 수집",
+      "sub": "실시간 제어 · AMR 관제",
+      "role": "ROS 2 · MoveIt 2 경로 실행, 센서 동기 수집, AMR 미션 연동",
+      "sw": "ROS 2 · MoveIt 2 · ros2_control · Fleet (WP6)",
+      "io": "ROS 2 Topic/Service"
+    },
+    {
+      "id": "L6",
+      "name": "06 설비 · 센서",
+      "sub": "로봇 · 스캐너 · 카메라 · PAUT · AMR",
+      "role": "검사 모듈 · 로봇 · AMR · PLC · 트리거 I/O",
+      "sw": "Vendor SDK · PLC · Trigger I/O",
+      "io": "OPC UA · TCP/IP"
+    }
+  ],
+  "processes": [
+    {
+      "id": "in",
+      "name": "투입 · 작업"
+    },
+    {
+      "id": "3D",
+      "name": "3D 스캔"
+    },
+    {
+      "id": "an",
+      "name": "자율 분석"
+    },
+    {
+      "id": "2D",
+      "name": "2D 국부"
+    },
+    {
+      "id": "UT",
+      "name": "초음파"
+    },
+    {
+      "id": "qc",
+      "name": "QC 판정"
+    },
+    {
+      "id": "out",
+      "name": "이송 · 보고"
+    },
+    {
+      "id": "amr",
+      "name": "AMR 물류"
+    }
+  ],
+  "categories": {
+    "geo": "형상",
+    "img": "영상",
+    "wave": "파형",
+    "ts": "시계열",
+    "res": "판정 · 결과",
+    "meta": "메타 · 명령"
+  },
+  "codes": [
+    {
+      "code": "D00",
+      "name": "공통 식별 · 계보",
+      "format": "JSON · 메타",
+      "desc": "job · part · attempt ID, 시각 · 단위 · 원본 참조",
+      "sub": [
+        {
+          "code": "D00-01",
+          "name": "개체 ID",
+          "detail": "part_id · serial"
+        },
+        {
+          "code": "D00-02",
+          "name": "작업",
+          "detail": "job_id · attempt"
+        },
+        {
+          "code": "D00-03",
+          "name": "좌표",
+          "detail": "셀 · 부품 좌표계 정의"
+        },
+        {
+          "code": "D00-04",
+          "name": "모델",
+          "detail": "DT · AI 모델 버전"
+        }
+      ],
+      "storage": "E+M",
+      "source_layer": 4,
+      "category": "meta",
+      "extension": false,
+      "preview": null
+    },
+    {
+      "code": "D01",
+      "name": "제품 · 작업",
+      "format": "JSON · 상태",
+      "desc": "품번 · 개체 · 작업지시 · 검사 유형",
+      "sub": [
+        {
+          "code": "D01-01",
+          "name": "작업지시",
+          "detail": "WO · 검사 유형 · 우선순위"
+        },
+        {
+          "code": "D01-02",
+          "name": "품목",
+          "detail": "용접 시편 A/B/C"
+        }
+      ],
+      "storage": "E+M",
+      "source_layer": 0,
+      "category": "meta",
+      "extension": false,
+      "preview": null
+    },
+    {
+      "code": "D02",
+      "name": "제품 형상",
+      "format": "STEP/STL · 3D 형상",
+      "desc": "CAD · 검사부 · 두께 · 좌표계",
+      "sub": [
+        {
+          "code": "D02-01",
+          "name": "CAD 3D 형상",
+          "detail": "300×200×16 mm 맞대기 + 플랜지"
+        },
+        {
+          "code": "D02-02",
+          "name": "도면 치수",
+          "detail": "용접선 x=150 · 비드 폭 19 mm"
+        },
+        {
+          "code": "D02-03",
+          "name": "해석 단면",
+          "detail": "UT 단면 y 40–140 mm"
+        }
+      ],
+      "storage": "E+O+M",
+      "source_layer": 0,
+      "category": "geo",
+      "extension": false,
+      "preview": "cad"
+    },
+    {
+      "code": "D03",
+      "name": "표면 스캔",
+      "format": "PLY/PCD · 3D 점군",
+      "desc": "3D 스캐너 점군과 용접부 형상 요약",
+      "sub": [
+        {
+          "code": "D03-01",
+          "name": "표면 점군",
+          "detail": "PLY 약 160 MB · 엣지 보관"
+        },
+        {
+          "code": "D03-02",
+          "name": "용접부 형상 요약",
+          "detail": "용접선 · 비드 폭 · 높이 (JSON)"
+        }
+      ],
+      "storage": "E+O+M",
+      "source_layer": 6,
+      "category": "geo",
+      "extension": false,
+      "preview": "cloud"
+    },
+    {
+      "code": "D04",
+      "name": "정합 · 좌표",
+      "format": "JSON · 행렬",
+      "desc": "CAD↔제품 정합, AMR 도킹 오차 추정, 검사 좌표계",
+      "sub": [
+        {
+          "code": "D04-01",
+          "name": "CAD ↔ 제품 정합",
+          "detail": "도킹 오차 dx · dy · dθ 추정 (러프 스캔)"
+        },
+        {
+          "code": "D04-02",
+          "name": "검사 좌표계",
+          "detail": "셀 → 부품 변환 행렬"
+        }
+      ],
+      "storage": "E+M",
+      "source_layer": 3,
+      "category": "meta",
+      "extension": false,
+      "preview": "dock"
+    },
+    {
+      "code": "D05",
+      "name": "검사 규칙 · 대상",
+      "format": "JSON/YAML · 규칙",
+      "desc": "필수 검사면 · 판정 기준 · 목표 결함",
+      "sub": [
+        {
+          "code": "D05-01",
+          "name": "검사 대상",
+          "detail": "필수면: 상면 · 비드 · 플랜지면"
+        },
+        {
+          "code": "D05-02",
+          "name": "판정 기준",
+          "detail": "편차 ±0.5 mm · 균열·기공 0 · −20 dB"
+        },
+        {
+          "code": "D05-03",
+          "name": "목표 결함 가정",
+          "detail": "융합불량 · 기공 · 언더컷"
+        }
+      ],
+      "storage": "E+M",
+      "source_layer": 1,
+      "category": "meta",
+      "extension": false,
+      "preview": null
+    },
+    {
+      "code": "D06",
+      "name": "재료 · 사전 해석",
+      "format": "JSON/VTK · 물성",
+      "desc": "음향 물성 · 감쇠",
+      "sub": [
+        {
+          "code": "D06-01",
+          "name": "재료 물성",
+          "detail": "탄소강 vL 5920 · vS 3240 m/s"
+        },
+        {
+          "code": "D06-02",
+          "name": "감쇠",
+          "detail": "10 MHz 기준 (가정)"
+        }
+      ],
+      "storage": "E+O+M",
+      "source_layer": 2,
+      "category": "meta",
+      "extension": false,
+      "preview": null
+    },
+    {
+      "code": "D07",
+      "name": "프로브 · 툴",
+      "format": "JSON · 구조화 메타",
+      "desc": "툴 사양과 TCP 오프셋",
+      "sub": [
+        {
+          "code": "D07-01",
+          "name": "프로브 사양",
+          "detail": "PAUT 10 MHz 64소자"
+        },
+        {
+          "code": "D07-02",
+          "name": "웨지 사양",
+          "detail": "55° 웨지"
+        },
+        {
+          "code": "D07-03",
+          "name": "커플링 조건",
+          "detail": "물 커플런트 · 가압"
+        },
+        {
+          "code": "D07-04",
+          "name": "스캐너 · 카메라 툴 (확장)",
+          "detail": "TCP 220 · 160 · 130 mm"
+        }
+      ],
+      "storage": "E+M",
+      "source_layer": 6,
+      "category": "meta",
+      "extension": false,
+      "preview": null
+    },
+    {
+      "code": "D08",
+      "name": "취득 설정 · 법칙",
+      "format": "JSON · 설정 · 배열",
+      "desc": "센서별 취득 조건",
+      "sub": [
+        {
+          "code": "D08-01",
+          "name": "취득 모드 설정",
+          "detail": "FMC 64×64"
+        },
+        {
+          "code": "D08-02",
+          "name": "지연 법칙",
+          "detail": "섹터 45–70°"
+        },
+        {
+          "code": "D08-03",
+          "name": "2D 노출 · 조명 (확장)",
+          "detail": "바 조명 입사각 · 강도"
+        },
+        {
+          "code": "D08-04",
+          "name": "3D 스캔 해상도 (확장)",
+          "detail": "점 간격 2 mm"
+        }
+      ],
+      "storage": "E+O+M",
+      "source_layer": 5,
+      "category": "meta",
+      "extension": false,
+      "preview": null
+    },
+    {
+      "code": "D09",
+      "name": "교정",
+      "format": "JSON + 원본",
+      "desc": "센서 교정 기록",
+      "sub": [
+        {
+          "code": "D09-01",
+          "name": "시간 원점",
+          "detail": "UT 웨지 지연"
+        },
+        {
+          "code": "D09-02",
+          "name": "감도 기준",
+          "detail": "Ø1 mm 기준공 = 0 dB"
+        },
+        {
+          "code": "D09-03",
+          "name": "소자 상태",
+          "detail": "64소자 정상"
+        },
+        {
+          "code": "D09-04",
+          "name": "스캐너 · 카메라 교정 (확장)",
+          "detail": "내부 · 외부 파라미터"
+        }
+      ],
+      "storage": "E+O+M",
+      "source_layer": 5,
+      "category": "meta",
+      "extension": false,
+      "preview": null
+    },
+    {
+      "code": "D10",
+      "name": "음향 DT 결과",
+      "format": "JSON/HDF5 · 예측",
+      "desc": "초음파 DT 예측 응답 (초음파 DT 연계)",
+      "sub": [
+        {
+          "code": "D10-01",
+          "name": "무결함 예측 FMC",
+          "detail": "초음파 DT"
+        },
+        {
+          "code": "D10-02",
+          "name": "감도",
+          "detail": "위치별 감도"
+        },
+        {
+          "code": "D10-05",
+          "name": "후보 위치 순위",
+          "detail": "탐촉자 위치 X"
+        }
+      ],
+      "storage": "E+O+M",
+      "source_layer": 2,
+      "category": "wave",
+      "extension": false,
+      "preview": null
+    },
+    {
+      "code": "D11",
+      "name": "검사 recipe",
+      "format": "JSON · 실행 조건",
+      "desc": "셀별 검사 실행 조건과 레시피 버전",
+      "sub": [
+        {
+          "code": "D11-01",
+          "name": "시작 위치",
+          "detail": "UT 주사 시작 y 40 mm"
+        },
+        {
+          "code": "D11-02",
+          "name": "섹터",
+          "detail": "45–70°"
+        },
+        {
+          "code": "D11-03",
+          "name": "3D 스캔 레시피 (확장)",
+          "detail": "v0 상면 3패스 → v1 5패스"
+        },
+        {
+          "code": "D11-04",
+          "name": "2D 조명 레시피 (확장)",
+          "detail": "부품별 입사각 15° / 25°"
+        }
+      ],
+      "storage": "E+M",
+      "source_layer": 1,
+      "category": "meta",
+      "extension": false,
+      "preview": null
+    },
+    {
+      "code": "D12",
+      "name": "로봇 · 셀 제약",
+      "format": "URDF/STL/JSON",
+      "desc": "셀 배치 · 접근 · 간섭 영역",
+      "sub": [
+        {
+          "code": "D12-01",
+          "name": "셀",
+          "detail": "3셀 배치 · 펜스 · 도크 위치"
+        },
+        {
+          "code": "D12-02",
+          "name": "접근",
+          "detail": "AMR · 지그 · 판재 · 플랜지 간섭 영역"
+        }
+      ],
+      "storage": "E+O+M",
+      "source_layer": 2,
+      "category": "geo",
+      "extension": false,
+      "preview": null
+    },
+    {
+      "code": "D13",
+      "name": "궤적 · 동기",
+      "format": "JSON · 명령 시퀀스",
+      "desc": "로봇 경로와 센서 트리거",
+      "sub": [
+        {
+          "code": "D13-01",
+          "name": "궤적",
+          "detail": "3D 스캔 경로 · 2D 촬영 포즈 · UT 주사 경로"
+        },
+        {
+          "code": "D13-02",
+          "name": "트리거",
+          "detail": "스캔 · 촬영 · 취득 동기"
+        }
+      ],
+      "storage": "E+O+M",
+      "source_layer": 2,
+      "category": "meta",
+      "extension": false,
+      "preview": "path"
+    },
+    {
+      "code": "D14",
+      "name": "UT 원본",
+      "format": "HDF5 · 다차원 배열",
+      "desc": "FMC 원시 파형",
+      "sub": [
+        {
+          "code": "D14-01",
+          "name": "FMC 원본",
+          "detail": "HDF5 약 1.94 GB · 엣지"
+        },
+        {
+          "code": "D14-02",
+          "name": "PA 빔별 A-scan",
+          "detail": "섹터별"
+        },
+        {
+          "code": "D14-03",
+          "name": "장비 원본 파일",
+          "detail": ".nde (OmniScan)"
+        }
+      ],
+      "storage": "E→O, M",
+      "source_layer": 6,
+      "category": "wave",
+      "extension": false,
+      "preview": "ascan"
+    },
+    {
+      "code": "D15",
+      "name": "실제 로봇 상태",
+      "format": "Parquet/CSV · 시계열",
+      "desc": "로봇 TCP · 관절 · 엔코더",
+      "sub": [
+        {
+          "code": "D15-01",
+          "name": "로봇 TCP",
+          "detail": "관절각 · TCP 자세 시계열"
+        },
+        {
+          "code": "D15-02",
+          "name": "엔코더",
+          "detail": "주사 위치"
+        }
+      ],
+      "storage": "E→O, M",
+      "source_layer": 5,
+      "category": "ts",
+      "extension": false,
+      "preview": "joint"
+    },
+    {
+      "code": "D16",
+      "name": "접촉 · 취득 품질",
+      "format": "Parquet/JSON · 지표",
+      "desc": "취득 중 품질 지표",
+      "sub": [
+        {
+          "code": "D16-01",
+          "name": "접촉",
+          "detail": "UT 후면 에코 %FSH"
+        },
+        {
+          "code": "D16-02",
+          "name": "신호 품질",
+          "detail": "2D 포화 · 3D 점 밀도"
+        },
+        {
+          "code": "D16-03",
+          "name": "힘",
+          "detail": "F/T 가압 (가정)"
+        }
+      ],
+      "storage": "E→O+M",
+      "source_layer": 5,
+      "category": "ts",
+      "extension": false,
+      "preview": null
+    },
+    {
+      "code": "D17",
+      "name": "공정 이벤트",
+      "format": "JSON · 이벤트",
+      "desc": "요청 · 결과 · 상태 메시지",
+      "sub": [
+        {
+          "code": "D17-01",
+          "name": "공정 이벤트",
+          "detail": "inspect.request · inspect.result · route …"
+        }
+      ],
+      "storage": "E+M",
+      "source_layer": 1,
+      "category": "meta",
+      "extension": false,
+      "preview": null
+    },
+    {
+      "code": "D18",
+      "name": "재구성 · 특징",
+      "format": "HDF5/PNG/JSON",
+      "desc": "재구성 영상 · 특징 맵",
+      "sub": [
+        {
+          "code": "D18-01",
+          "name": "섹터 S-scan",
+          "detail": "UT"
+        },
+        {
+          "code": "D18-02",
+          "name": "TFM 영상",
+          "detail": "UT 약 12 MB"
+        },
+        {
+          "code": "D18-03",
+          "name": "잔차 영상",
+          "detail": "DT 대비"
+        },
+        {
+          "code": "D18-04",
+          "name": "CAD 대비 편차 맵 (확장)",
+          "detail": "3D 약 0.1 MB"
+        }
+      ],
+      "storage": "E+O+M",
+      "source_layer": 3,
+      "category": "img",
+      "extension": false,
+      "preview": "dev"
+    },
+    {
+      "code": "D19",
+      "name": "지시 · 판별",
+      "format": "JSON · 객체",
+      "desc": "검출된 지시 · 결함의 위치 · 크기 · 유형",
+      "sub": [
+        {
+          "code": "D19-01",
+          "name": "지시 위치",
+          "detail": "3D ROI · 2D 결함 · UT 지시 좌표"
+        },
+        {
+          "code": "D19-02",
+          "name": "지시 크기 추정",
+          "detail": "길이 · 깊이"
+        },
+        {
+          "code": "D19-03",
+          "name": "지시 유형",
+          "detail": "덴트 · 언더필 · 기공 · 균열 · 융합불량"
+        }
+      ],
+      "storage": "E+M",
+      "source_layer": 3,
+      "category": "res",
+      "extension": false,
+      "preview": "roi"
+    },
+    {
+      "code": "D20",
+      "name": "신뢰성 평가",
+      "format": "JSON · 지표 · 판정",
+      "desc": "품질 게이트와 신뢰도",
+      "sub": [
+        {
+          "code": "D20-01",
+          "name": "품질 게이트",
+          "detail": "커버리지 · 신뢰도 · 후면 에코 기준"
+        },
+        {
+          "code": "D20-04",
+          "name": "지시별 신뢰도",
+          "detail": "2D 0.74–0.93"
+        },
+        {
+          "code": "D20-05",
+          "name": "커버리지",
+          "detail": "3D 필수면 %"
+        }
+      ],
+      "storage": "E+M",
+      "source_layer": 3,
+      "category": "res",
+      "extension": false,
+      "preview": null
+    },
+    {
+      "code": "D21",
+      "name": "최종 결과",
+      "format": "JSON/PDF · 판정",
+      "desc": "QC 종합 판정 · 보고",
+      "sub": [
+        {
+          "code": "D21-01",
+          "name": "판정",
+          "detail": "PASS / FAIL"
+        },
+        {
+          "code": "D21-02",
+          "name": "보고 결함 목록",
+          "detail": "결함 · 위치"
+        },
+        {
+          "code": "D21-03",
+          "name": "보고서",
+          "detail": "PDF"
+        }
+      ],
+      "storage": "O+M",
+      "source_layer": 1,
+      "category": "res",
+      "extension": false,
+      "preview": null
+    },
+    {
+      "code": "D22",
+      "name": "재검 요청 · 응답",
+      "format": "JSON · 명령",
+      "desc": "품질 미달 시 재측정 요청과 응답",
+      "sub": [
+        {
+          "code": "D22-01",
+          "name": "재검 요청",
+          "detail": "원인 · 보정 방법"
+        },
+        {
+          "code": "D22-02",
+          "name": "재검 응답",
+          "detail": "보정 후 결과"
+        }
+      ],
+      "storage": "E+M",
+      "source_layer": 3,
+      "category": "meta",
+      "extension": false,
+      "preview": null
+    },
+    {
+      "code": "D23",
+      "name": "재검 이력",
+      "format": "JSON/Parquet",
+      "desc": "시도 계보와 재검 효과",
+      "sub": [
+        {
+          "code": "D23-01",
+          "name": "시도 계보",
+          "detail": "attempt 1 → 2"
+        },
+        {
+          "code": "D23-02",
+          "name": "재검 효과",
+          "detail": "보정 전후 지표"
+        }
+      ],
+      "storage": "O+M",
+      "source_layer": 4,
+      "category": "meta",
+      "extension": false,
+      "preview": null
+    },
+    {
+      "code": "D24",
+      "name": "AI 모델 · 정책",
+      "format": "ONNX/JSON",
+      "desc": "판정 모델 · 재검 정책 · 라우팅 규칙",
+      "sub": [
+        {
+          "code": "D24-01",
+          "name": "신뢰도 모델",
+          "detail": "1차: 규칙"
+        },
+        {
+          "code": "D24-02",
+          "name": "재검 정책",
+          "detail": "게이트 미달 → 보정 1회"
+        },
+        {
+          "code": "D24-03",
+          "name": "라우팅 규칙 (확장)",
+          "detail": "ROI 분류 → 다음 공정 점수"
+        }
+      ],
+      "storage": "E+O+M",
+      "source_layer": 1,
+      "category": "meta",
+      "extension": false,
+      "preview": null
+    },
+    {
+      "code": "D25",
+      "name": "독립 정답 · 검증",
+      "format": "JSON/영상",
+      "desc": "시연 정답 (가상 결함 설정)",
+      "sub": [
+        {
+          "code": "D25-01",
+          "name": "독립 정답",
+          "detail": "시편별 결함 설정"
+        },
+        {
+          "code": "D25-02",
+          "name": "정답 대조",
+          "detail": "검출 대조"
+        }
+      ],
+      "storage": "O+M",
+      "source_layer": 2,
+      "category": "res",
+      "extension": false,
+      "preview": null
+    },
+    {
+      "code": "D26",
+      "name": "파일 · 전송 관리",
+      "format": "JSON · 메타",
+      "desc": "원시 파일 기록 · 전송 상태",
+      "sub": [
+        {
+          "code": "D26-01",
+          "name": "파일 기록",
+          "detail": "URI · 크기 · 해시"
+        },
+        {
+          "code": "D26-02",
+          "name": "전송",
+          "detail": "엣지 → 서버"
+        }
+      ],
+      "storage": "E+M",
+      "source_layer": 4,
+      "category": "meta",
+      "extension": false,
+      "preview": null
+    },
+    {
+      "code": "D27",
+      "name": "2D 영상 원본",
+      "format": "PNG/TIFF · 영상",
+      "desc": "국부 비전 영상과 조명 조건 (플랫폼 확장안)",
+      "sub": [
+        {
+          "code": "D27-01",
+          "name": "국부 영상",
+          "detail": "25 MP · 장당 약 25 MB"
+        },
+        {
+          "code": "D27-02",
+          "name": "조명 조건",
+          "detail": "입사각 · 강도 · 노출"
+        }
+      ],
+      "storage": "E→O, M",
+      "source_layer": 6,
+      "category": "img",
+      "extension": true,
+      "preview": "img"
+    },
+    {
+      "code": "D28",
+      "name": "AMR 미션 · 이송",
+      "format": "JSON · 명령 · 상태",
+      "desc": "OCS → AMR 이송 미션과 상태 (플랫폼 확장안)",
+      "sub": [
+        {
+          "code": "D28-01",
+          "name": "이송 미션",
+          "detail": "목적지 셀 · 도크 · 적재장 / 반품 라인"
+        },
+        {
+          "code": "D28-02",
+          "name": "미션 상태",
+          "detail": "출발 · 도착 · 하역"
+        }
+      ],
+      "storage": "E+M",
+      "source_layer": 1,
+      "category": "meta",
+      "extension": true,
+      "preview": null
+    },
+    {
+      "code": "D29",
+      "name": "AMR 상태 · 위치",
+      "format": "시계열",
+      "desc": "AMR 위치 · 자세 · 속도 (플랫폼 확장안)",
+      "sub": [
+        {
+          "code": "D29-01",
+          "name": "위치 · 자세",
+          "detail": "x · y · θ"
+        },
+        {
+          "code": "D29-02",
+          "name": "속도 · 배터리",
+          "detail": "0.6 m/s · 배터리 (가정)"
+        }
+      ],
+      "storage": "E→O, M",
+      "source_layer": 5,
+      "category": "ts",
+      "extension": true,
+      "preview": "map"
+    },
+    {
+      "code": "D30",
+      "name": "공정 라우팅 결정",
+      "format": "JSON · 결정",
+      "desc": "3D 결과 분석 → 다음 공정 · 대상 (플랫폼 확장안)",
+      "sub": [
+        {
+          "code": "D30-01",
+          "name": "라우팅",
+          "detail": "3D → 2D → 초음파 순서"
+        },
+        {
+          "code": "D30-02",
+          "name": "촬영 · 주사 대상",
+          "detail": "ROI → 2D 포즈, 용접선 → UT 범위"
+        },
+        {
+          "code": "D30-03",
+          "name": "판단 근거 · 점수",
+          "detail": "규칙 점수 (1차)"
+        }
+      ],
+      "storage": "E+M",
+      "source_layer": 1,
+      "category": "meta",
+      "extension": true,
+      "preview": null
+    }
+  ]
+}
