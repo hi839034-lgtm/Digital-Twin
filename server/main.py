@@ -21,16 +21,26 @@ def scenarios():
     return list_scenarios()
 
 
+_scenario_cache = {}
+
+
 @app.get("/api/scenario/{sid}")
-def scenario(sid: str):
-    """원본 SCEN.build + CODES.build 결과 전체 (타임라인 재생은 브라우저가 한다)"""
-    from sim import flows, scen
+def scenario(sid: str, full: bool = False):
+    """원본 SCEN.build + planWin(로봇 경로 계획) + CODES.build 결과 전체 (타임라인 재생은 브라우저가 한다).
+    full=true 는 원본과 숫자 대조용 전체 출력 (용량이 크다)."""
+    from sim import flows, geom, kin, plan, scen
     if sid not in scen.DEF:
         raise HTTPException(404, f"unknown scenario {sid}")
-    sc = scen.build(sid)
-    consts = {"CX": scen.CX, "LANE": scen.LANE, "BAY": scen.BAY, "DOCKZ": scen.DOCKZ, "INX": scen.INX,
-              "JX": scen.JX, "STORE": scen.STORE, "RETURN": scen.RETURN, "SPEED": scen.SPEED}
-    return {**sc, **flows.build(sc), "consts": consts}
+    if (sid, full) not in _scenario_cache:
+        sc = scen.build(sid)
+        for c in sc["wins"]:
+            for w in sc["wins"][c]:
+                w["plan"] = plan.to_json(plan.plan_win(w), full)
+        consts = {"CX": scen.CX, "LANE": scen.LANE, "BAY": scen.BAY, "DOCKZ": scen.DOCKZ, "INX": scen.INX,
+                  "JX": scen.JX, "STORE": scen.STORE, "RETURN": scen.RETURN, "SPEED": scen.SPEED,
+                  "HOME": kin.HOME, "rois": {k: len(v) for k, v in geom.ROIS.items()}, "spots": {k: v["label"] for k, v in geom.SPOTS.items()}}
+        _scenario_cache[(sid, full)] = {**sc, **flows.build(sc), "consts": consts}
+    return _scenario_cache[(sid, full)]
 
 
 @app.get("/api/codes")
