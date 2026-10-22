@@ -52,7 +52,10 @@ def devgrid(part):
 
     def make():
         g = render.dev_grid(part, 2)
-        g["v"] = [round(x, 5) for x in g["v"]]
+        # 원본 GEOM.devGrid 는 Float32Array 로 저장한다 → 같은 32비트 값이 되도록 float32 로 반올림하고,
+        # 9자리 유효숫자로 보내면(float32 왕복 보장) 화면이 Float32Array.from 으로 정확히 같은 값을 얻는다.
+        import numpy as np
+        g["v"] = [float(f"{np.float32(x):.9g}") for x in g["v"]]
         return g
 
     return _memo(("devgrid", part), make)

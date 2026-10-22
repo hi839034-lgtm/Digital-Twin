@@ -112,7 +112,7 @@
       const G = scs[0].geom;
       window.GEOM = {
         SPOTS: G.spots, ROIS: G.rois, LOF: G.lof, IMG, WX, bead, dev, devComp, topZ,
-        devGrid: (part, step) => { const g = GRID[part]; return { nx: g.nx, ny: g.ny, step: g.step, v: g.v }; },
+        devGrid: (part, step) => { const g = GRID[part]; return { nx: g.nx, ny: g.ny, step: g.step, v: Float32Array.from(g.v) }; }, // 원본과 같은 Float32Array
       };
       window.SCEN = {
         build: sid => JSON.parse(JSON.stringify(SCS[sid])), // 화면이 w.plan.act 등을 덧붙이므로 매번 새 사본

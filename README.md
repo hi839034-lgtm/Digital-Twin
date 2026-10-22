@@ -15,8 +15,9 @@
 | `server/sources.py` | 데이터 공급원. `ScenarioSource` / `SensorSource`(센서, 미구현) |
 | `server/data/codes.json` | 계층 · 공정 · 데이터 사전 D00~D30 (원본에서 `tools/extract_codes.py` 로 추출) |
 | `server/sim/` | 원본 이식: `geom`(시편 형상·결함) · `scen`(시나리오 생성) · `flows`(계층 간 데이터 흐름) · `kin`(6축 운동학) · `plan`(셀 로봇 경로 계획) · `render`(가상 3D 편차 맵 · 2D 영상, numpy/OpenCV) |
-| `web/` | 화면 (`index.html`, `style.css`, `js/` 탭별 모듈, `vendor/three/` three.js 로컬 사본) |
-| `tools/` | `extract_codes.py`(데이터 사전 추출) · `export_html.py`(단일 HTML 만들기) |
+| `web2/` | **새 화면**: 원본의 CSS · 구조 · 화면 코드 · three.js r128 을 가져와 서버 데이터로 구동 (`adapter.js` 가 연결부). 접속 `/v2/` |
+| `web/` | 이전 화면 (직접 작성, `/`). web2 가 확정되면 교체 예정 |
+| `tools/` | `extract_codes.py`(데이터 사전 추출) · `import_original_ui.py`(원본에서 web2 만들기) · `export_html.py`(단일 HTML 만들기, 현재 web 기준) |
 | `export/` | 단일 HTML 결과물과 바로가기 |
 | `licenses/` | 사용 라이브러리 라이선스 (three.js, Pretendard) |
 | `run_server.bat` | 서버를 켜고 브라우저를 여는 바로가기 |
@@ -50,6 +51,13 @@ python tools/export_html.py     # → export/WP5_InspectionDT_py.html
 ```
 
 ## 검증
+
+새 화면(`/v2/`)은 원본 `WP5_InspectionDT.html` 과 같은 시나리오 · 시각 · 탭 조합에서 비교했다.
+- 탭 9개 글자 내용: 시나리오 3개 × 여러 시각, 288건 모두 일치
+- 2D 캔버스 그림 226개 중 224개 픽셀 일치 (나머지 2개는 글자 가장자리 2픽셀, 색 값 ±2)
+- 3D 장면 60건 중 51건 일치 (나머지는 시계 기반 움직임이 있는 AMR 장면으로, 원본도 자기 자신과 같은 정도로 달라짐)
+
+계산 모듈 대조:
 
 원본 `WP5_InspectionDT.html` 의 계산(시나리오 · 로봇 경로 · 편차 맵 · 2D 영상)과 값이 같은지 브라우저에서 원본 코드를 직접 실행해 대조했다.
 시나리오 1,172개 값 일치, 경로 14,103개 값 최대 차이 1.4e-11, 2D 영상은 픽셀 단위 일치.
