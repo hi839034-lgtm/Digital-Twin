@@ -28,7 +28,9 @@ def scenario(sid: str):
     if sid not in scen.DEF:
         raise HTTPException(404, f"unknown scenario {sid}")
     sc = scen.build(sid)
-    return {**sc, **flows.build(sc)}
+    consts = {"CX": scen.CX, "LANE": scen.LANE, "BAY": scen.BAY, "DOCKZ": scen.DOCKZ, "INX": scen.INX,
+              "JX": scen.JX, "STORE": scen.STORE, "RETURN": scen.RETURN, "SPEED": scen.SPEED}
+    return {**sc, **flows.build(sc), "consts": consts}
 
 
 @app.get("/api/codes")

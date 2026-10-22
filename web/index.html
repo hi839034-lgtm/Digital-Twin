@@ -4,42 +4,30 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>WP5 검사셀 디지털트윈 (모사)</title>
-<style>
-  body{margin:0;font-family:system-ui,"Malgun Gothic",sans-serif;background:#10141c;color:#e6e9ef;display:flex;flex-direction:column;height:100vh}
-  header{display:flex;gap:8px;align-items:center;padding:8px 12px;background:#1a2030}
-  button,select{background:#2a3350;color:inherit;border:0;padding:6px 12px;border-radius:6px;cursor:pointer}
-  #bar{flex:1;height:10px;background:#2a3350;border-radius:5px;position:relative;cursor:pointer}
-  #fill{height:100%;width:0;background:#4f8cff;border-radius:5px}
-  main{flex:1;display:flex;min-height:0}
-  #view{flex:1}
-  aside{width:320px;padding:12px;overflow:auto;background:#161b27;font-size:14px}
-  .ev{padding:6px 8px;margin-bottom:6px;border-radius:6px;background:#202840}
-  .ev.on{outline:2px solid #ffb84f}
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header>
-  <button id="play">▶ 재생</button>
-  <select id="speed"><option>1</option><option>4</option><option>8</option><option>16</option></select>×
-  <div id="bar"><div id="fill"></div></div>
-  <span id="clock">0.0 s</span>
-  <span id="conn" style="opacity:.6">연결 중…</span>
+  <h1>WP5 검사셀 디지털트윈</h1>
+  <select id="scen" aria-label="시나리오"></select>
+  <button id="prev" title="이전 데이터 교환">⏮ 이전</button>
+  <button id="play" class="primary">▶ 재생</button>
+  <button id="next" title="다음 데이터 교환">⏭ 다음</button>
+  <select id="speed" aria-label="속도"><option>1</option><option>4</option><option selected>8</option><option>16</option></select>×
+  <span id="clock">0:00 / 0:00</span>
+  <button id="fs">전체 화면</button>
+  <span id="conn" class="muted"></span>
 </header>
-<main>
-  <div id="view"></div>
-  <aside>
-    <b>데이터 교환 (상자)</b>
-    <div id="events"></div>
-    <hr>
-    <div id="info"></div>
-  </aside>
-</main>
+<div id="tl"></div>
+<nav id="tabs" role="tablist"></nav>
+<main id="panes"></main>
+
 <script type="importmap">
 { "imports": {
   "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
   "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="app.js"></script>
+<script type="module" src="js/main.js"></script>
 </body>
 </html>
