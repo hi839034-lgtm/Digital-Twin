@@ -3,3 +3,5 @@ dt/
 __pycache__/
 *.pyc
 .env
+
+web/vendor/fonts/src/

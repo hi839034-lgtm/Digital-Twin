@@ -3,7 +3,7 @@
 import { S, clamp, subName, layerName, procName, mainWin } from "./state.js";
 import { getBlob, getJSON } from "./data.js";
 
-const UIF = "'Malgun Gothic',sans-serif", MONO = "Consolas,monospace";
+const UIF = "Pretendard,'Malgun Gothic',sans-serif", MONO = "Consolas,monospace";
 const C = { muted: "#8b95ab", line: "#2a3350", fg: "#e6e9ef", surf: "#1d2434", bad: "#ff6b6b", good: "#3ecf8e", geo: "#4f8cff", img: "#3ecf8e", wave: "#c678dd", c3D: "#4f8cff", c2D: "#3ecf8e" };
 
 // ---------- 자원(편차 격자 · 2D 영상) 불러오기 ----------

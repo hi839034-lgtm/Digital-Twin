@@ -84,7 +84,7 @@ export function cellTab(c, label) {
     const g = cv.getContext("2d");
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, W, H);
-    if (!w) { g.fillStyle = "#8b95ab"; g.font = "12px sans-serif"; g.fillText("작업 없음", 10, 20); return; }
+    if (!w) { g.fillStyle = "#8b95ab"; g.font = "12px Pretendard,sans-serif"; g.fillText("작업 없음", 10, 20); return; }
     if (jw !== w) { jw = w; jq = []; const n = 180; for (let i = 0; i <= n; i++) { const tt = w.t0 + ((w.t1 - w.t0) * i) / n; jq.push([tt, robotAt(w, S.sc.consts.HOME, tt).q]); } }
     const L = 34, R = W - 8, T = 16, B = H - 16, X = (tt) => L + ((tt - w.t0) / (w.t1 - w.t0)) * (R - L), Y = (q) => T + (1 - (q + Math.PI) / (2 * Math.PI)) * (B - T);
     g.font = "10.5px Consolas,monospace"; g.textBaseline = "middle"; g.textAlign = "right";

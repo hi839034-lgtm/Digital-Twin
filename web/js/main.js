@@ -78,6 +78,8 @@ function frame(ts) {
 }
 
 async function start() {
+  // 캔버스 글자(3D 라벨, 그림 속 문구)를 그리기 전에 글꼴을 먼저 불러온다
+  try { await Promise.all(["400", "600", "700"].map((w) => document.fonts.load(`${w} 14px Pretendard`, "가나다ABC"))); } catch (e) { /* 실패해도 Malgun Gothic 으로 대체 */ }
   try {
     S.codes = await api("/api/codes");
     const all = await Promise.all(["S1", "S2", "S3"].map((s) => api("/api/scenario/" + s)));

@@ -2,7 +2,7 @@
 
   python tools/export_html.py            →  export/WP5_InspectionDT_py.html
 
-들어가는 것: 화면 코드(web/js) · CSS · three.js(web/vendor) · 서버가 계산하는 모든 데이터
+들어가는 것: 화면 코드(web/js) · CSS · 글꼴(Pretendard 부분 글꼴) · three.js(web/vendor) · 서버가 계산하는 모든 데이터
 (시나리오 3개 · 데이터 사전 · 편차 맵 · 2D 영상). 파일 안에 모두 들어 있어 인터넷도 필요 없다.
 (ES 모듈은 import map 의 data: URL 로 연결한다. Edge · Chrome 에서 file:// 로 열린다.)
 """
@@ -15,6 +15,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "server"))
 import payloads  # noqa: E402
+sys.path.insert(0, str(ROOT / "tools"))
+import fonts  # noqa: E402
 
 WEB = ROOT / "web"
 OUT = ROOT / "export" / "WP5_InspectionDT_py.html"
@@ -55,6 +57,10 @@ def main():
     # 4) HTML 조립: index.html 의 뼈대를 쓰고 CSS · 스크립트만 바꿔 넣는다
     html = (WEB / "index.html").read_text(encoding="utf-8")
     css = (WEB / "style.css").read_text(encoding="utf-8")
+    # 글꼴: 이 화면에 쓰는 글자만 남긴 Pretendard 를 CSS 에 base64 로 넣는다 (매번 현재 문구 기준으로 다시 만든다)
+    font_data, _ = fonts.build_all()
+    for w, b in font_data.items():
+        css = css.replace(f"url(vendor/fonts/Pretendard-{fonts.WEIGHTS[w]}.woff2)", f"url({data_url(b, 'font/woff2')})")
     html = html.replace('<link rel="stylesheet" href="style.css">', f"<style>\n{css}\n</style>")
     a = html.index('<script type="importmap">')
     b = html.index("</body>")

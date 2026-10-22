@@ -1,3 +1,6 @@
+@font-face{font-family:"Pretendard";font-style:normal;font-weight:400;font-display:swap;src:url(vendor/fonts/Pretendard-Regular.woff2) format("woff2")}
+@font-face{font-family:"Pretendard";font-style:normal;font-weight:600;font-display:swap;src:url(vendor/fonts/Pretendard-SemiBold.woff2) format("woff2")}
+@font-face{font-family:"Pretendard";font-style:normal;font-weight:700;font-display:swap;src:url(vendor/fonts/Pretendard-Bold.woff2) format("woff2")}
 :root{
   --bg:#0f131b;--panel:#171c28;--panel2:#1d2434;--line:#2a3350;--text:#e6e9ef;--muted:#8b95ab;
   --accent:#4f8cff;--ok:#3ecf8e;--ng:#ff6b6b;--warn:#ffb84f;--sc:#9b8cff;

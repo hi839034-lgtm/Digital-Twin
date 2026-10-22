@@ -7,7 +7,7 @@ function label(text, color = "#e6e9ef") {
   const cv = document.createElement("canvas");
   cv.width = 512; cv.height = 96;
   const g = cv.getContext("2d");
-  g.font = "600 44px 'Malgun Gothic',sans-serif";
+  g.font = "600 44px Pretendard,'Malgun Gothic',sans-serif";
   g.textAlign = "center"; g.textBaseline = "middle";
   g.fillStyle = color;
   g.fillText(text, 256, 48);

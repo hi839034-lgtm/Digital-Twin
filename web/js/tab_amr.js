@@ -61,7 +61,7 @@ export default {
     const C = sc.consts, X0 = -8, X1 = 8.4, Z0 = -2.2, Z1 = 5.2;
     const s = Math.min(W / (X1 - X0), H / (Z1 - Z0));
     const px = (x) => (x - X0) * s + (W - (X1 - X0) * s) / 2, py = (z) => (z - Z0) * s + (H - (Z1 - Z0) * s) / 2;
-    g.font = "12px 'Malgun Gothic',sans-serif";
+    g.font = "12px Pretendard,'Malgun Gothic',sans-serif";
     const cc = { "3D": "#3b6fd6", "2D": "#3bb08a", UT: "#d69a3b" };
     for (const c of ["3D", "2D", "UT"]) {
       const x = C.CX[c];
