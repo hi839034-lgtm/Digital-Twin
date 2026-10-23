@@ -66,8 +66,9 @@ def build_v1(font_data):
     for p in sorted((web / "js").glob("*.js")):
         src = re.sub(r'(from\s+|import\s+)(["\'])\./([A-Za-z0-9_]+)\.js\2', r'\1\2dt/\3\2', p.read_text(encoding="utf-8"))
         imports[f"dt/{p.stem}"] = data_url(src)
-    imports["three"] = data_url((web / "vendor/three/three.module.min.js").read_bytes())
-    imports["three/addons/controls/OrbitControls.js"] = data_url((web / "vendor/three/addons/controls/OrbitControls.js").read_bytes())
+    # 텍스트로 읽어 줄바꿈을 통일한다 (윈도우에서 깃으로 받으면 CRLF 가 되어 결과 파일이 달라지는 것을 막는다)
+    imports["three"] = data_url((web / "vendor/three/three.module.min.js").read_text(encoding="utf-8"))
+    imports["three/addons/controls/OrbitControls.js"] = data_url((web / "vendor/three/addons/controls/OrbitControls.js").read_text(encoding="utf-8"))
 
     js = {"/api/codes": payloads.codes()}
     for sid in payloads.SCENARIOS:

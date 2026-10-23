@@ -48,5 +48,12 @@ def subset_weight(weight, chars):
 
 
 def build_all():
+    """굵기별 woff2 바이트와 글자 목록.
+    원본 OTF(web/vendor/fonts/src, 용량 때문에 깃 제외)가 있으면 현재 문구 기준으로 다시 줄이고,
+    없으면(저장소를 새로 받은 경우) 깃에 올라가 있는 줄인 글꼴(web/vendor/fonts/*.woff2)을 그대로 쓴다."""
     chars = collect_chars()
-    return {w: subset_weight(w, chars) for w in WEIGHTS}, chars
+    if all((SRC / f"Pretendard-{n}.otf").exists() for n in WEIGHTS.values()):
+        return {w: subset_weight(w, chars) for w in WEIGHTS}, chars
+    print("[fonts] 원본 OTF 없음 → 저장소의 줄인 글꼴(woff2)을 그대로 사용합니다. 문구를 바꿨다면 OTF를 받아 다시 줄이세요 (tools/subset_font.py).", file=sys.stderr)
+    out = {w: (SRC.parent / f"Pretendard-{n}.woff2").read_bytes() for w, n in WEIGHTS.items()}
+    return out, chars

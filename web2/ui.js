@@ -1,4 +1,4 @@
-/* WP5 DT 화면 코드 — 원본 WP5_InspectionDT.html 에서 가져옴 (tools/import_original_ui.py, [py] 표시 3곳만 수정) */
+/* WP5 DT 화면 코드 — 원본 WP5_InspectionDT.html 에서 가져옴 (tools/import_original_ui.py, [py] 표시한 곳만 수정) */
 (function () {
 'use strict';
 const $ = s => document.querySelector(s);
@@ -40,8 +40,8 @@ function nnHTML(o) {
 }
 
 /* ================= robot plans ================= */
-// [py] 로봇 경로 계획은 서버(server/sim/plan.py)가 계산해 w.plan = {K, segs} 로 내려준다. 여기서는 실제 도킹 자세의 셀 기하만 붙인다.
-function planWin(w) { w.plan.act = KIN.makeCtx(w.pose); }
+// [py] 로봇 경로 계획은 서버(server/sim/plan.py)가 계산해 w.plan = {K, segs(+stats, spotW)} 로 내려준다. 화면에서 할 일 없음.
+function planWin(w) {}
 function robotAt(c, tt) {
   const w = SC.wins[c].find(x => tt >= x.t0 && tt <= x.t1);
   if (!w) return { q: KIN.HOME, w: null, key: null };
@@ -394,7 +394,7 @@ const V3 = (function () {
       inner.forEach((r, i) => { const m = new THREE.Mesh(new THREE.SphereGeometry(0.011, 10, 8), new THREE.MeshBasicMaterial({ color: col })); m.position.copy(pts[i]); sub.add(m);
         const z = r.target.R.z, L = c === 'UT' ? 0.06 : 0.09; const back = r2w(c, [r.target.p[0] - z[0] * L, r.target.p[1] - z[1] * L, r.target.p[2] - z[2] * L]);
         sub.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([pts[i], back]), new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: 0.7 }))); });
-      if (c === '2D') { const tip = r2w(c, inner[0].tip); const tg = r2w(c, KIN.makeCtx(w.pose).P2W(...GEOM.SPOTS[sg.spot].c, 16)); const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints([tip, tg]), new THREE.LineDashedMaterial({ color: col, dashSize: 0.02, gapSize: 0.015 })); ln.computeLineDistances(); sub.add(ln); }
+      if (c === '2D') { const tip = r2w(c, inner[0].tip); const tg = r2w(c, sg.spotW /* [py] 서버 계산값 */); const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints([tip, tg]), new THREE.LineDashedMaterial({ color: col, dashSize: 0.02, gapSize: 0.015 })); ln.computeLineDistances(); sub.add(ln); }
       G.add(sub); });
     if (c === 'UT' && w.mode === 'recontact') { const kp = w.plan.K.find(k => k.press); if (kp) { const m = new THREE.Mesh(new THREE.TorusGeometry(0.035, 0.007, 8, 24), new THREE.MeshBasicMaterial({ color: 0xe08a00 })); m.position.copy(r2w(c, kp.tip)); m.rotation.x = Math.PI / 2; const sub = new THREE.Group(); sub.userData.showAt = w.redoAt; sub.add(m); G.add(sub); } }
   }
@@ -466,7 +466,7 @@ function stepsFor(c, w) {
   if (!w) return [];
   const r = w.redo, ra = w.redoAt, fix = w.plan.segs.find(s => s.kind === 'fix');
   const pts = w.plan.segs.reduce((a, s) => a + s.res.res.filter(x => x.inner).length, 0);
-  const sm = w.plan.segs.map(s => KIN.summary(s.res)); const minC = Math.min(...sm.map(s => s.minClear.d)) * 1000; const allOk = sm.every(s => s.ok === s.n);
+  const sm = w.plan.segs.map(s => s.stats); /* [py] 서버 계산값 */ const minC = Math.min(...sm.map(s => s.minClear.d)) * 1000; const allOk = sm.every(s => s.ok === s.n);
   const exec0 = w.t0 + 3, execEnd = w.t1 - 3;
   const S = (name, detail, a, b, fail) => ({ name, detail, a, b, fail });
   if (c === '3D') return [
@@ -550,7 +550,7 @@ function cellTab(c) {
       <div class="qbar"><span>보정 후</span><div class="bars"><div class="b1" style="width:${after ? M[2] : 0}%"></div><div class="thr" style="left:${M[4]}%"></div></div><b class="ok">${after ? fmt(M[2]) : '—'}</b></div>
       <p class="${past ? '' : 'muted'}">${past ? what : '품질 판단 전'} <span class="chips" style="display:inline-flex">${chips(['D20-01', 'D22-01', 'D23-02'], { strict: true, on: past })}</span></p>`;
   } else qm.innerHTML = `<p class="muted">${w ? '이 시나리오에서는 품질 기준을 1회에 통과해 보정 없이 진행합니다.' : '—'}</p>`;
-  root.querySelector('.ptab').innerHTML = w ? w.plan.segs.map(sg => { const s = KIN.summary(sg.res); const e = KIN.tipError(sg.res, w.plan.act); const v = s.ok < s.n ? '도달 불가' : s.minClear.d < 0 ? 'NG' : s.minClear.d < 0.02 ? '주의' : 'OK';
+  root.querySelector('.ptab').innerHTML = w ? w.plan.segs.map(sg => { const s = sg.stats; const e = sg.stats.tipErr; /* [py] 서버 계산값 */ const v = s.ok < s.n ? '도달 불가' : s.minClear.d < 0 ? 'NG' : s.minClear.d < 0.02 ? '주의' : 'OK';
     return `<tr><td><span class="sw" style="background:${sg.kind === 'fix' ? 'var(--warn)' : 'var(--accent)'}"></span>${sg.label}</td><td class="num">${s.ok}/${s.n}</td><td class="num">${(s.minClear.d * 1000).toFixed(0)} mm</td><td class="num">${e.toFixed(1)} mm</td><td><span class="pill ${v === 'OK' ? 'ok' : v === '주의' ? 'warn' : 'ng'}">${v}</span></td></tr>`; }).join('') : '';
   jointPlot(c, w, root.querySelector('.jplot'));
   root.querySelector('.covl').textContent = ra.w ? `${CELLNM[c]} 셀 · ${w.job} · ${ra.key && ra.key.seg >= 0 ? w.plan.segs[ra.key.seg].label : ra.key && ra.key.lift ? '재접촉 (들어 올림)' : '접근·이탈'}` : `${CELLNM[c]} 셀 · 대기`;
@@ -566,7 +566,7 @@ const AMRT = (function () {
   function docks() {
     if (dockCache[sid]) return dockCache[sid]; const rows = [];
     SC.amrs.forEach(m => m.segs.filter(s => s.kind === 'dock' && s.pose).forEach(s => { const w = SC.wins[s.cell].find(x => x.job === s.job); if (!w) return;
-      const act = KIN.makeCtx(w.pose); const after = KIN.tipError(w.plan.segs[0].res, act);
+      const after = w.plan.segs[0].stats.tipErr; /* [py] 서버 계산값 */
       const sp = w.shots ? GEOM.SPOTS[w.shots[0][0]] : null;
       const before = w.dockBefore; // [py] 보정 전 툴 끝 오차는 서버(sim/plan.py dock_before)가 계산한다
       rows.push({ amr: m.id, cell: s.cell, job: s.job, t0: s.t0, t1: s.t1, pose: w.pose, est: w.est, before, after }); }));

@@ -18,6 +18,16 @@ WEB2_DIR = Path(__file__).parent.parent / "web2"  # v2: 원본 화면 코드를 
 app = FastAPI(title="WP5 Inspection DT")
 
 
+@app.middleware("http")
+async def no_stale_files(request, call_next):
+    """화면 파일(html/js/css)은 매번 새로 확인하게 한다 (바뀐 파일은 다시 받고, 그대로면 304 로 가볍게 끝난다).
+    이 설정이 없으면 브라우저가 예전 JS 를 캐시로 써서, 고친 코드가 반영되지 않는 일이 생긴다."""
+    resp = await call_next(request)
+    if not request.url.path.startswith("/api"):
+        resp.headers["Cache-Control"] = "no-cache"
+    return resp
+
+
 @app.get("/api/scenarios")
 def scenarios():
     return list_scenarios()

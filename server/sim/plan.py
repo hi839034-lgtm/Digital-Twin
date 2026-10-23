@@ -78,7 +78,16 @@ def seg_stats(sg, act):
 def to_json(p, full=False):
     """브라우저로 보낼 형태. full=False 는 화면에 필요한 것만, full=True 는 검증용 전체."""
     if full:
-        return {"K": p["K"], "segs": p["segs"]}
+        # 화면이 값마다 다시 계산하지 않도록 경로 묶음별 요약(stats)과 2D 촬영 지점의 로봇 좌표(spotW)를 함께 준다
+        segs = []
+        for sg in p["segs"]:
+            d = dict(sg)
+            d["stats"] = seg_stats(sg, p["act"])
+            if sg.get("spot") is not None:
+                c = geom.SPOTS[sg["spot"]]["c"]
+                d["spotW"] = p["act"].p2w(c[0], c[1], 16)
+            segs.append(d)
+        return {"K": p["K"], "segs": segs}
     segs = []
     for sg in p["segs"]:
         d = {k: v for k, v in sg.items() if k != "res"}

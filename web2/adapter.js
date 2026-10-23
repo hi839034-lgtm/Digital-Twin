@@ -1,8 +1,12 @@
 /* 연결부: 파이썬 서버의 데이터를 원본 화면 코드(ui.js)가 기대하는 전역 객체 KIN · GEOM · SCEN · CODES 로 만든다.
  *
- * 계산(시나리오 · 로봇 경로 · 편차 맵 · 2D 영상)은 모두 서버(server/sim)가 하고, 여기서는 받은 값을 같은 모양으로 담기만 한다.
- * 아래 순수 함수(fk · makeCtx · summary · tipError · amrPos · topZ/dev)는 화면이 그림을 그릴 때 값마다 바로 쓰는 짧은 계산이라
- * 원본 core 와 같은 코드를 그대로 둔다 (서버의 sim/kin.py · geom.py 와 같은 식).
+ * 계산은 모두 서버(server/sim)가 하고, 여기서는 받은 값을 같은 모양으로 담기만 한다.
+ *   - 경로 요약 · 툴 끝 오차 · 촬영 지점 좌표: 서버가 w.plan.segs[].stats / spotW 로 계산해 준다 (JS 에 식 없음)
+ *   - 높이(topZ) · 편차(dev): 서버가 준 값 격자(/api/devgrid 의 lat4 · bead)에서 읽는다 (JS 에 식 없음)
+ * 화면이 프레임마다 직접 돌려야 하는 계산은 두 가지뿐이다.
+ *   - 순기구학 fk (로봇 자세 → 링크 위치): 식은 여기, 모델 상수(DH · OFF · TOOLLEN)는 서버. 로드할 때 서버가 계산한
+ *     기준값(fkCheck)과 자동 대조해 두 구현이 어긋나면 콘솔에 알린다.
+ *   - amrPos (서버가 준 이동 구간을 시각 t 로 보간): 화면 전용 보간이라 파이썬에는 두지 않는다.
  *
  * 데이터 경로: 서버 모드는 /api/... 를 부르고, 단일 HTML 로 내보낸 파일은 window.__DT_DATA__ 의 같은 키를 쓴다.
  */
@@ -18,60 +22,45 @@
     const r = await fetch(p); if (!r.ok) throw new Error(p + ' ' + r.status); return r.blob();
   };
 
-  const PI = Math.PI, D2R = PI / 180;
+  const D2R = Math.PI / 180;
 
-  /* ---------------- KIN (그리기에 필요한 순수 함수만) ---------------- */
-  const DH = [[0.40, 0, PI / 2], [0, 0.80, 0], [0, 0, PI / 2], [0.70, 0, -PI / 2], [0, 0, PI / 2], [0.15, 0, 0]];
-  const OFF = [0, PI / 2, 0, 0, 0, 0];
+  /* ---------------- KIN: 순기구학 식만 (모델 상수는 서버) ---------------- */
+  let KP = null; // {DH, OFF, TOOLLEN} — 서버(sim/kin.py)가 유일한 출처
   function mul(A, B) { const C = new Array(16); for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) { let s = 0; for (let k = 0; k < 4; k++) s += A[r * 4 + k] * B[k * 4 + c]; C[r * 4 + c] = s; } return C; }
   function dh(t, d, a, al) { const ct = Math.cos(t), st = Math.sin(t), ca = Math.cos(al), sa = Math.sin(al); return [ct, -st * ca, st * sa, a * ct, st, ct * ca, -ct * sa, a * st, 0, sa, ca, d, 0, 0, 0, 1]; }
   const I4 = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
   function fk(q, tool) {
     let T = I4; const pts = [[0, 0, 0]];
-    for (let i = 0; i < 6; i++) { T = mul(T, dh(q[i] + OFF[i], DH[i][0], DH[i][1], DH[i][2])); pts.push([T[3], T[7], T[11]]); }
+    for (let i = 0; i < 6; i++) { T = mul(T, dh(q[i] + KP.OFF[i], KP.DH[i][0], KP.DH[i][1], KP.DH[i][2])); pts.push([T[3], T[7], T[11]]); }
     T = mul(T, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, tool, 0, 0, 0, 1]); pts.push([T[3], T[7], T[11]]);
     return { T, pts };
   }
-  const AMR0 = { min: [0.425, -0.55, -0.46], max: [1.175, 0.55, 0] };
-  function makeCtx(pose) {
-    pose = pose || { dx: 0, dy: 0, dth: 0 };
-    const c = Math.cos(pose.dth), s = Math.sin(pose.dth);
-    const P2W = (x, y, z) => { const u = (x - 150) / 1000, v = (y - 100) / 1000; return [0.80 + pose.dx + c * u - s * v, pose.dy + s * u + c * v, z / 1000]; };
-    const rot = d => [c * d[0] - s * d[1], s * d[0] + c * d[1], d[2]];
-    const aabb = (x0, y0, z0, x1, y1, z1) => { const p = [[x0, y0], [x1, y0], [x0, y1], [x1, y1]].map(q => P2W(q[0], q[1], 0)); return { min: [Math.min(...p.map(q => q[0])), Math.min(...p.map(q => q[1])), z0 / 1000], max: [Math.max(...p.map(q => q[0])), Math.max(...p.map(q => q[1])), z1 / 1000] }; };
-    const AMR = { min: [AMR0.min[0] + pose.dx, AMR0.min[1] + pose.dy, AMR0.min[2]], max: [AMR0.max[0] + pose.dx, AMR0.max[1] + pose.dy, AMR0.max[2]] };
-    const PLATE = aabb(0, 0, 0, 300, 200, 16), FLANGE = aabb(0, 188, 16, 300, 200, 96);
-    return { pose, P2W, rot, AMR, PLATE, FLANGE, OBST: [['AMR·지그', AMR], ['판재', PLATE], ['플랜지', FLANGE]] };
-  }
-  function summary(sp) {
-    const inner = sp.res.filter(x => x.inner); const ok = inner.filter(x => x.reach).length;
-    let mc = { d: 1e9, link: '', obj: '' }; sp.res.forEach(x => { if (x.clear.d < mc.d) mc = x.clear; if (x.trans && x.trans.d < mc.d) mc = x.trans; });
-    return { n: inner.length, ok, minClear: mc };
-  }
-  function tipError(sp, ctxAct) {
-    let mx = 0; sp.res.filter(x => x.inner).forEach(x => { const a = ctxAct.P2W(...x.target.part); const e = Math.hypot(x.tip[0] - a[0], x.tip[1] - a[1]) * 1000; if (e > mx) mx = e; });
+  /** 서버가 계산한 기준값과 JS fk 의 최대 차이 [m] */
+  function fkMaxDiff(checks) {
+    let mx = 0;
+    for (const c of checks) { const p = fk(c.q, c.tool).pts; for (let i = 0; i < p.length; i++) for (let k = 0; k < 3; k++) mx = Math.max(mx, Math.abs(p[i][k] - c.pts[i][k])); }
     return mx;
   }
 
-  /* ---------------- GEOM (형상 · 결함 자료는 서버, topZ/dev 는 3D 메시를 그릴 때 값마다 쓰는 식) ---------------- */
-  const WX = 150, WH = 9.5, BH = 2.0;
-  const bead = x => { const d = (x - WX) / WH; return Math.abs(d) < 1 ? BH * (1 - d * d) : 0; };
-  function devComp(part, x, y) {
-    if (part === 'B') { const r2 = (x - 70) ** 2 + (y - 110) ** 2; return [-1.2 * Math.exp(-r2 / (2 * 9 * 9))]; }
-    if (part === 'C') {
-      const u = (x - WX) / WH, out = [0, 0, 0, 0, 0];
-      if (Math.abs(u) < 1 && y > 50 && y < 90) out[0] = -0.8 * Math.sin(Math.PI * (y - 50) / 40) * (1 - u * u);
-      const toe = Math.abs(x - (WX + WH)); if (toe < 1.4 && y > 118 && y < 146) out[1] = -0.75 * (1 - toe / 1.4) * Math.sin(Math.PI * (y - 118) / 28);
-      [[147, 70], [152.5, 78]].forEach((c, k) => { const r = Math.hypot(x - c[0], y - c[1]); if (r < 0.8) out[2 + k] = -0.5 * Math.sqrt(1 - (r / 0.8) ** 2); });
-      if (Math.abs(x - 150.3) < 0.12 && y > 58 && y < 72) out[4] = -0.3;
-      return out;
-    }
-    return [];
-  }
-  const dev = (part, x, y) => { let d = 0; for (const v of devComp(part, x, y)) d += v; return d; };
+  /* ---------------- GEOM: 높이 · 편차는 서버가 준 값 격자에서 읽는다 (식 없음) ---------------- */
+  // topZ(x, y) = 16 + bead(x) + dev(x, y).  화면이 묻는 점은 두 종류뿐이다:
+  //   4 mm 격자점(3D 모델의 정점: x 0..300, y 0..200)과 2 mm 격자 중심(점군 미리보기). 그 밖의 점은 서버가 주지 않았으므로 오류로 알린다.
+  let BEAD = null, LAT = null, DEVG = null;
+  const near = (v, step, off) => { const k = Math.round((v - off) / step); return Math.abs(v - off - k * step) < 0.01 ? k : null; };
+  const inRange = (k, n) => k !== null && k >= 0 && k < n;
+  const bead = x => {
+    let k = near(x, 4, 0); if (inRange(k, 76)) return BEAD.l4[k];
+    k = near(x, 2, 1); if (inRange(k, 150)) return BEAD.c2[k];
+    throw new Error('bead: 서버가 준 격자에 없는 x=' + x);
+  };
+  const dev = (part, x, y) => {
+    let i = near(x, 4, 0), j = near(y, 4, 0); if (inRange(i, 76) && inRange(j, 51)) return LAT[part].v[j * 76 + i];
+    i = near(x, 2, 1); j = near(y, 2, 1); if (inRange(i, 150) && inRange(j, 94)) return DEVG[part].v[j * 150 + i];
+    throw new Error('dev: 서버가 준 격자에 없는 점 (' + x + ', ' + y + ')');
+  };
   const topZ = (part, x, y) => 16 + bead(x) + dev(part, x, y);
 
-  /* ---------------- SCEN.amrPos ---------------- */
+  /* ---------------- SCEN.amrPos: 서버가 준 이동 구간(segs)을 시각 t 로 보간 (화면 전용) ---------------- */
   const dist = (a, b) => Math.hypot(b[0] - a[0], b[1] - a[1]);
   const plen = p => { let s = 0; for (let i = 1; i < p.length; i++) s += dist(p[i - 1], p[i]); return s; };
   let CONSTS = null;
@@ -100,6 +89,9 @@
       const parts = ['A', 'B', 'C'];
       const grids = await Promise.all(parts.map(p => getJSON('/api/devgrid/' + p)));
       const GRID = Object.fromEntries(parts.map((p, i) => [p, grids[i]]));
+      BEAD = grids[0].bead;                                                   // 비드 높이는 시편과 무관(x 만의 함수)
+      LAT = Object.fromEntries(parts.map(p => [p, GRID[p].lat4]));
+      DEVG = Object.fromEntries(parts.map(p => [p, { v: Float32Array.from(GRID[p].v) }])); // 원본과 같은 Float32Array
       // 2D 영상: 세 시나리오가 쓰는 촬영 지점(재촬영 시 포화 영상 포함)
       const keys = new Set();
       for (const sid of SIDS) { const w = SCS[sid].wins['2D'].find(x => x.main); for (const s of w.shots) { keys.add(s[0] + ':0'); if (w.shots.some(x => x[0] === s[0] && x[2])) keys.add(s[0] + ':1'); } }
@@ -108,14 +100,17 @@
 
       /* ---- 전역 객체 ---- */
       const C = CONSTS;
-      window.KIN = { HOME: C.HOME, D2R, TOOLLEN: { scanner: 0.22, camera: 0.16, probe: 0.13 }, fk, makeCtx, NOM: makeCtx(), summary, tipError };
+      KP = C.kin;
+      const drift = fkMaxDiff(C.fkCheck);
+      if (!(drift < 1e-9)) console.error('[adapter] JS 순기구학이 서버(sim/kin.py)와 다릅니다. 최대 차이(m):', drift);
+      window.KIN = { HOME: C.HOME, D2R, TOOLLEN: KP.TOOLLEN, fk };
       const G = scs[0].geom;
       window.GEOM = {
-        SPOTS: G.spots, ROIS: G.rois, LOF: G.lof, IMG, WX, bead, dev, devComp, topZ,
-        devGrid: (part, step) => { const g = GRID[part]; return { nx: g.nx, ny: g.ny, step: g.step, v: Float32Array.from(g.v) }; }, // 원본과 같은 Float32Array
+        SPOTS: G.spots, ROIS: G.rois, LOF: G.lof, IMG, dev, topZ,
+        devGrid: (part, step) => { const g = GRID[part]; return { nx: g.nx, ny: g.ny, step: g.step, v: DEVG[part].v }; },
       };
       window.SCEN = {
-        build: sid => JSON.parse(JSON.stringify(SCS[sid])), // 화면이 w.plan.act 등을 덧붙이므로 매번 새 사본
+        build: sid => JSON.parse(JSON.stringify(SCS[sid])), // 화면이 시나리오 객체에 값을 덧붙이므로 매번 새 사본
         amrPos, CX: C.CX, LANE: C.LANE, BAY: C.BAY, DOCKZ: C.DOCKZ, INX: C.INX, JX: C.JX, STORE: C.STORE, RETURN: C.RETURN,
         ANALYSIS: C.ANALYSIS,
       };

@@ -303,26 +303,3 @@ def build(sid):
     events.sort(key=lambda e: e["t"])
     return {"sid": sid, "def": d, "T": T, "amrs": amrs, "wins": wins, "events": events, "data": data,
             "stages": stages, "J": J, "P": P}
-
-
-def amr_pos(amr, t):
-    """시각 t 의 AMR 위치와 그 순간의 구간(seg)"""
-    for s in amr["segs"]:
-        if t < s["t0"] or t > s["t1"]:
-            continue
-        if s["kind"] != "move":
-            return {"p": s["pos"], "seg": s}
-        L = plen(s["pts"])
-        dd = (t - s["t0"]) / max(1e-6, s["t1"] - s["t0"]) * L
-        pts = s["pts"]
-        for i in range(1, len(pts)):
-            ln = _dist(pts[i - 1], pts[i])
-            if dd <= ln or i == len(pts) - 1:
-                u = min(1, dd / ln) if ln > 0 else 1
-                return {"p": [pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * u,
-                              pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * u], "seg": s}
-            dd -= ln
-    last = amr["segs"][-1] if amr["segs"] else None
-    if last and t > last["t1"]:
-        return {"p": last.get("pos") or last["pts"][-1], "seg": {"kind": "idle"}}
-    return {"p": [INX, LANE], "seg": {"kind": "idle"}}

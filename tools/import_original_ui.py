@@ -3,8 +3,8 @@
   python tools/import_original_ui.py <원본 HTML 경로>
 
 꺼내는 것: CSS · 화면 구조(HTML) · 화면 코드(ui.js) · three.js r128 · OrbitControls r128
-바꾸는 것: ① 로봇 경로 계획(planWin)은 서버가 계산한 w.plan 을 쓰고, ② 2D 영상은 서버가 만든 PNG 를 쓰고,
-              ③ 도킹 보정 전 툴 끝 오차는 서버가 계산한 w.dockBefore 를 쓴다.
+바꾸는 것(모두 [py] 표시): ① 로봇 경로 계획(planWin)은 서버가 계산한 w.plan 을 쓰고, ② 2D 영상은 서버가 만든 PNG 를 쓰고,
+              ③ 도킹 보정 전 툴 끝 오차는 w.dockBefore, ④ 경로 요약 · 촬영 지점 좌표는 w.plan.segs[].stats / spotW 를 쓴다.
               나머지 화면 코드는 원본 그대로다. 계산 모듈(KIN · GEOM · SCEN · CODES)은 web2/adapter.js 가
               서버 데이터로 같은 모양의 전역 객체를 만들어 준다.
 """
@@ -30,8 +30,8 @@ def between(s, a, b, start=0):
 def patch_planwin(js):
     a = js.index("function planWin(w) {")
     b = js.index("function robotAt(c, tt)")
-    new = ("// [py] 로봇 경로 계획은 서버(server/sim/plan.py)가 계산해 w.plan = {K, segs} 로 내려준다. 여기서는 실제 도킹 자세의 셀 기하만 붙인다.\n"
-           "function planWin(w) { w.plan.act = KIN.makeCtx(w.pose); }\n")
+    new = ("// [py] 로봇 경로 계획은 서버(server/sim/plan.py)가 계산해 w.plan = {K, segs(+stats, spotW)} 로 내려준다. 화면에서 할 일 없음.\n"
+           "function planWin(w) {}\n")
     return js[:a] + new + js[b:]
 
 
@@ -50,6 +50,24 @@ def patch_docks(js):
     marker = "const before = KIN.tipError(KIN.solvePath(path, KIN.HOME, act), act);"
     b = js.index(marker, a) + len(marker)
     return js[:a] + "const before = w.dockBefore; // [py] 보정 전 툴 끝 오차는 서버(sim/plan.py dock_before)가 계산한다" + js[b:]
+
+
+def patch_stats(js):
+    """경로 요약(도달 · 최소 여유 · 툴 끝 오차)과 촬영 지점의 로봇 좌표는 서버가 계산해 준 값(stats, spotW)을 쓴다."""
+    pairs = [
+        ("const sm = w.plan.segs.map(s => KIN.summary(s.res));",
+         "const sm = w.plan.segs.map(s => s.stats); /* [py] 서버 계산값 */"),   # 한 줄 뒤에 코드가 이어지므로 // 가 아니라 /* */
+        ("const s = KIN.summary(sg.res); const e = KIN.tipError(sg.res, w.plan.act);",
+         "const s = sg.stats; const e = sg.stats.tipErr; /* [py] 서버 계산값 */"),
+        ("const act = KIN.makeCtx(w.pose); const after = KIN.tipError(w.plan.segs[0].res, act);",
+         "const after = w.plan.segs[0].stats.tipErr; /* [py] 서버 계산값 */"),
+        ("KIN.makeCtx(w.pose).P2W(...GEOM.SPOTS[sg.spot].c, 16)",
+         "sg.spotW /* [py] 서버 계산값 */"),
+    ]
+    for old, new in pairs:
+        assert old in js, "원본 코드가 바뀌었습니다: " + old[:60]
+        js = js.replace(old, new)
+    return js
 
 
 def main(src_path):
@@ -78,8 +96,8 @@ def main(src_path):
     (OUT / "vendor" / "three.r128.min.js").write_text(three.strip() + "\n", encoding="utf-8")
     (OUT / "vendor" / "OrbitControls.r128.js").write_text(orbit.strip() + "\n", encoding="utf-8")
 
-    ui = patch_docks(patch_spotimg(patch_planwin(ui)))
-    (OUT / "ui.js").write_text("/* WP5 DT 화면 코드 — 원본 WP5_InspectionDT.html 에서 가져옴 (tools/import_original_ui.py, [py] 표시 3곳만 수정) */\n" + ui.strip() + "\n", encoding="utf-8")
+    ui = patch_stats(patch_docks(patch_spotimg(patch_planwin(ui))))
+    (OUT / "ui.js").write_text("/* WP5 DT 화면 코드 — 원본 WP5_InspectionDT.html 에서 가져옴 (tools/import_original_ui.py, [py] 표시한 곳만 수정) */\n" + ui.strip() + "\n", encoding="utf-8")
 
     html = f"""<!doctype html>
 <html lang="ko">
