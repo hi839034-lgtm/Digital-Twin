@@ -13,7 +13,7 @@
 | 폴더 | `web/` | `web2/` |
 | 서버 주소 | `/v1/` (기존 `/` 도 같음) | `/v2/` |
 | 내용 | 직접 작성한 화면 | 원본의 CSS · 구조 · 화면 코드를 가져온 화면 (원본과 같은 모습) |
-| 단일 HTML | `export/WP5_InspectionDT_py_v1.html` | `export/WP5_InspectionDT_py_v2.html` |
+| 단일 HTML | `export/DT_v1.html` | `export/DT_v2.html` |
 
 ## 폴더 구성
 
@@ -57,7 +57,7 @@ uvicorn server.main:app --reload
 코드나 시나리오를 고친 뒤:
 
 ```powershell
-python tools/export_html.py          # v1, v2 둘 다 → export/WP5_InspectionDT_py_v1.html, _v2.html
+python tools/export_html.py          # v1, v2 둘 다 → export/DT_v1.html, DT_v2.html
 python tools/export_html.py v2       # v2 만
 ```
 

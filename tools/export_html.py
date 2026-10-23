@@ -1,8 +1,8 @@
 """서버 없이 더블클릭으로 열리는 단일 HTML 파일을 만든다 (원본 WP5_InspectionDT.html 과 같은 배포 형태).
 
   python tools/export_html.py          →  v1, v2 둘 다
-  python tools/export_html.py v1       →  export/WP5_InspectionDT_py_v1.html   (web/  : 직접 작성한 화면)
-  python tools/export_html.py v2       →  export/WP5_InspectionDT_py_v2.html   (web2/ : 원본 화면 코드 + 서버 데이터)
+  python tools/export_html.py v1       →  export/DT_v1.html   (web/  : 직접 작성한 화면)
+  python tools/export_html.py v2       →  export/DT_v2.html   (web2/ : 원본 화면 코드 + 서버 데이터)
 
 들어가는 것: 화면 코드 · CSS · 글꼴(Pretendard 부분 글꼴) · three.js · 서버(server/payloads.py)가 계산하는 모든 데이터
 (시나리오 3개 · 데이터 사전 · 편차 맵 · 2D 영상). 파일 안에 모두 들어 있어 서버도 인터넷도 필요 없다.
@@ -85,7 +85,7 @@ def build_v1(font_data):
         f"<script>window.__DT_DATA__={js_literal(embed)};</script>\n"
         f'<script type="importmap">{json.dumps({"imports": imports})}</script>\n'
         '<script type="module">import "dt/main";</script>\n') + html[b:]
-    out = write("WP5_InspectionDT_py_v1.html", html)
+    out = write("DT_v1.html", html)
     return out, f"모듈 {len(imports) - 2}개 · 데이터 {len(js)}개 · 영상 {len(embed['blob'])}장"
 
 
@@ -112,7 +112,7 @@ def build_v2(font_data):
         f"<script>{three}</script>\n<script>{orbit}</script>\n"
         f'<script id="dt-ui" type="text/plain">{ui}</script>\n'   # 실행하지 않는 텍스트로 두고, adapter 가 데이터를 만든 뒤 실행한다
         f"<script>{adapter}</script>\n") + html[b:]
-    out = write("WP5_InspectionDT_py_v2.html", html)
+    out = write("DT_v2.html", html)
     return out, f"데이터 {len(js)}개 · 영상 {len(embed['blob'])}장"
 
 
